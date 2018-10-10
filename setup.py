@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 
 def readme():
@@ -20,7 +20,7 @@ setup(name='frost-client',
       author_email='anders.eriksen@bt.no',
       license='MIT',
       keywords='weather pandas ',
-      packages=['frost'],
+      packages=find_packages(exclude=('tests',)),
       install_requires=[
           'requests',
           'pandas'
