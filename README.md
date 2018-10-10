@@ -35,7 +35,7 @@ Get all available observation sources (stations) for Hordaland county (12)
 ```
 from frost.client import APIError, Frost
 f = Frost()
-res = self.f.get_sources(county='12')
+res = f.get_sources(county='12')
 
 # return as Pandas Dataframe
 df = res.to_df()
@@ -51,7 +51,7 @@ Display available time series for a station (here Bergen - Florida)
 ```
 from frost.client import APIError, Frost
 f = Frost()
-res = self.f.get_available_timeseries(sources=['SN50540'])
+res = f.get_available_timeseries(sources=['SN50540'])
 
 # return as Pandas Dataframe
 df = res.to_df()
@@ -65,7 +65,7 @@ Display observations for a station (here Bergen - Florida)
 ```
 from frost.client import APIError, Frost
 f = Frost()
-res = self.f.get_observations(
+res = f.get_observations(
             sources=['SN50540'],
             elements=['sum(precipitation_amount P1D)'],
             timeoffsets=['PT6H'],
