@@ -10,7 +10,13 @@ This is an unofficial client. We have no relationship to met.no
 
 ## Install
 
-`pipenv install git+https://github.com/bergenstidende/frost-client.git@master#egg=frost-client`
+Requires Python 3.7
+
+`pip install frost-client`
+
+or
+
+`pipenv install frost-client`
 
 This will install the frost-client and Pandas.
 
@@ -57,3 +63,7 @@ To run all tests:
 To run specific tests:
 
 `nosetests tests.test_requests:TestFrostRequests.test_get_sources`
+
+## Packaging etc
+
+https://packaging.python.org/tutorials/packaging-projects/
