@@ -33,7 +33,7 @@ class SourcesResponse(object):
 
         for c in date_columns:
             if c in df.columns:
-                df[c] = pd.to_datetime(df[c], cache=True, errors='coerce')
+                df[c] = pd.to_datetime(df[c], errors='coerce')
 
         if compact:
             return df[compact_columns]

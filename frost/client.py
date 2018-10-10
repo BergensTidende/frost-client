@@ -2,9 +2,9 @@ import os
 from urllib.parse import urljoin
 import requests
 from requests.auth import HTTPBasicAuth
-from frost.models import SourcesResponse
-from frost.models import AvailableTimeSeriesResponse
-from frost.models import ObservationsResponse
+from .models import SourcesResponse
+from .models import AvailableTimeSeriesResponse
+from .models import ObservationsResponse
 
 FROST_API_KEY = os.environ.get('FROST_API_KEY', None)
 
