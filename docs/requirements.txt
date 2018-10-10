@@ -1,1 +1,3 @@
 m2r
+requests
+pandas
