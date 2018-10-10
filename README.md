@@ -33,7 +33,7 @@ or passed as a username parameter when creating and instance of the class.
 Get all available observation sources (stations) for Hordaland county (12)
 
 ```
-from client import APIError, Frost
+from frost.client import APIError, Frost
 f = Frost()
 res = self.f.get_sources(county='12')
 
@@ -49,7 +49,7 @@ ids = res.to_ids_list()
 Display available time series for a station (here Bergen - Florida)
 
 ```
-from client import APIError, Frost
+from frost.client import APIError, Frost
 f = Frost()
 res = self.f.get_available_timeseries(sources=['SN50540'])
 
@@ -63,7 +63,7 @@ df = res.to_df()
 Display observations for a station (here Bergen - Florida)
 
 ```
-from client import APIError, Frost
+from frost.client import APIError, Frost
 f = Frost()
 res = self.f.get_observations(
             sources=['SN50540'],
