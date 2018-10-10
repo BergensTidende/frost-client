@@ -30,6 +30,8 @@ or passed as a username parameter when creating and instance of the class.
 
 ### Get weather data sources
 
+Get all available observation sources (stations) for Hordaland county (12)
+
 ```
 from client import APIError, Frost
 f = Frost()
@@ -41,6 +43,38 @@ df = res.to_df()
 # return IDs of sources as list
 ids = res.to_ids_list()
 ```
+
+### Get available time series
+
+Display available time series for a station (here Bergen - Florida)
+
+```
+from client import APIError, Frost
+f = Frost()
+res = self.f.get_available_timeseries(sources=['SN50540'])
+
+# return as Pandas Dataframe
+df = res.to_df()
+
+```
+
+### Get observations
+
+Display observations for a station (here Bergen - Florida)
+
+```
+from client import APIError, Frost
+f = Frost()
+res = self.f.get_observations(
+            sources=['SN50540'],
+            elements=['sum(precipitation_amount P1D)'],
+            timeoffsets=['PT6H'],
+            referencetime='2018-01-01/2018-02-01')
+df = res.to_df()
+
+```
+
+See tests for more examples.
 
 ## Local development
 
