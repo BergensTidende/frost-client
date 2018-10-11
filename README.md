@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/BergensTidende/frost-client.svg?branch=master)](https://travis-ci.org/BergensTidende/frost-client)
 
+[![Documentation Status](https://readthedocs.org/projects/frost-client/badge/?version=latest)](https://frost-client.readthedocs.io/en/latest/?badge=latest)
+
 This Python client wraps the [Frost API](https://frost.met.no/concepts#getting_started). You should 
 read up on those docs before using this client. And be sure to check out met.no's 
 [Terms of Use](https://frost.met.no/termsofuse)
