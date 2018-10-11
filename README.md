@@ -97,7 +97,3 @@ To run all tests:
 To run specific tests:
 
 `nosetests tests.test_requests:TestFrostRequests.test_get_sources`
-
-## Packaging etc
-
-https://packaging.python.org/tutorials/packaging-projects/

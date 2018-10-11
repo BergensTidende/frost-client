@@ -3,23 +3,21 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to frost-client's documentation!
-========================================
-
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
-Indices and tables
-==================
+.. mdinclude:: ../README.md
+
+
+Client API reference
+--------------------
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
 
-#.. mdinclude:: ../README.md
-
-.. automodule:: client
+.. automodule:: frost.client
+  :members:
 
 .. autoclass:: APIError
 
@@ -27,7 +25,7 @@ Indices and tables
   :members: 
 
 
-.. automodule:: models
+.. automodule:: frost.models
 
 .. autoclass:: SourcesResponse
   :members: 
