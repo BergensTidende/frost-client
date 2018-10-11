@@ -8,6 +8,8 @@ The main purpose of this client is returns Pandas Dataframes from Frost API data
 
 This is an unofficial client. We have no relationship to met.no
 
+Documentation: https://frost-client.readthedocs.io/en/latest/
+
 ## Install
 
 Requires Python 3.7
