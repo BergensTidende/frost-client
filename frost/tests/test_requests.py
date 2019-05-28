@@ -51,7 +51,7 @@ class TestFrostRequests(unittest.TestCase):
             elements=['sum(precipitation_amount P1M)',
                       'mean(air_temperature P1M)'],
             timeoffsets='PT6H',
-            referencetime='2018-01-01/9999-09-28')
+            referencetime='2019-01-01/2020-09-28')
         self.assertIsInstance(res, ObservationsResponse)
         self.assertIsInstance(res.to_str(), str)
         self.assertIsInstance(res.to_df(), DataFrame)
@@ -78,7 +78,7 @@ class TestFrostRequests(unittest.TestCase):
         self.assertTrue('referenceTime' in df.columns)
 
     def test_get_observations_error_400(self):
-        with self.assertRaisesRegexp(APIError, '400'):
+        with self.assertRaisesRegex(APIError, '400'):
             res = self.f.get_observations(
                 sources=['SN50540XX'],
                 elements=['sum(precipitation_amount PT1H)'],
@@ -95,8 +95,10 @@ class TestFrostRequests(unittest.TestCase):
         self.assertIsInstance(the_exception, APIError)
         self.assertEqual(
             str(the_exception),
-            "{'code': 404, 'message': 'Not found', 'reason': 'No data found'}")
+            "{'code': 412, 'message': '412', 'reason': 'No time series found for this combination of parameters, check /observations/availableTimeSeries for more information.'}")
 
+    def tearDown(self):
+        self.f.session.close()
 
 if __name__ == '__main__':
     unittest.main()
