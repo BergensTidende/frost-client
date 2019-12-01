@@ -1,6 +1,4 @@
 import pprint
-from pandas.io.json import json_normalize
-import pandas as pd
 
 
 class ObservationsResponse(object):
@@ -30,36 +28,44 @@ class ObservationsResponse(object):
             metadata (name etc) about the sources fewer columns
 
         """
+        try:
+            import pandas as pd
+            from pandas.io.json import json_normalize
+        except ImportError:
+            # dependency missing, issue a warning
+            import warnings
+            warnings.warn('Pandas dependency not found, please install with pip install frost-client[pandas] to enable to_df() feature')
+            return None
+        else:
+            compact_columns = ["stationId", "sourceId",
+                            "validFrom", "timeOffset",
+                            "timeResolution", "elementId",
+                            "unit"]
 
-        compact_columns = ["stationId", "sourceId",
-                           "validFrom", "timeOffset",
-                           "timeResolution", "elementId",
-                           "unit"]
+            df = json_normalize(self.series, 'observations', ['sourceId',
+                                                            'referenceTime', ],
+                                errors='ignore')
+            # change date columns to datetime
+            date_columns = ['referenceTime']
 
-        df = json_normalize(self.series, 'observations', ['sourceId',
-                                                          'referenceTime', ],
-                            errors='ignore')
-        # change date columns to datetime
-        date_columns = ['referenceTime']
+            for c in date_columns:
+                if c in df.columns:
+                    df[c] = pd.to_datetime(df[c])
 
-        for c in date_columns:
-            if c in df.columns:
-                df[c] = pd.to_datetime(df[c])
+            # create an extra column with normalized sourceId
+            df["stationId"] = df['sourceId'].apply(lambda x: x.split(':')[0])
 
-        # create an extra column with normalized sourceId
-        df["stationId"] = df['sourceId'].apply(lambda x: x.split(':')[0])
+            if compact:
+                df = df[compact_columns]
 
-        if compact:
-            df = df[compact_columns]
+            # if we have metadataon the sources, merge it in
+            if self.sources:
+                sources_df = self.sources.to_df(compact=compact)
+                sources_df = sources_df.add_prefix('source.')
+                df = df.merge(sources_df, how="left", left_on="stationId",
+                            right_on="source.id")
 
-        # if we have metadataon the sources, merge it in
-        if self.sources:
-            sources_df = self.sources.to_df(compact=compact)
-            sources_df = sources_df.add_prefix('source.')
-            df = df.merge(sources_df, how="left", left_on="stationId",
-                          right_on="source.id")
-
-        return df
+            return df
 
     def to_list(self):
         """Returns the sources as a Python list of dicts"""

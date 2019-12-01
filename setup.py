@@ -7,7 +7,7 @@ def readme():
 
 
 setup(name='frost-client',
-      version='0.1.2',
+      version='0.1.3',
       description='Python wrapper for the frost.met.no API',
       long_description=readme(),
       long_description_content_type='text/markdown',
@@ -25,9 +25,11 @@ setup(name='frost-client',
       packages=find_packages(exclude=('tests',)),
       python_requires='>= 3.6',
       install_requires=[
-          'requests',
-          'pandas'
+          'requests'
       ],
+      extras_require={
+        'pandas':  ["pandas"]
+      }
       test_suite='nose.collector',
       tests_require=['nose'],
       zip_safe=False)

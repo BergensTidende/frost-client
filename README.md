@@ -20,11 +20,13 @@ Requires Python 3.7
 
 `pip install frost-client`
 
-or
+or if you want the response from the API returned as Pandas DataFrame, use:
 
-`pipenv install frost-client`
+`pip install frost-client[pandas]`
 
-This will install the frost-client and Pandas.
+or using pipenv: 
+
+`pipenv install frost-client[pandas]`
 
 ## Usage
 
@@ -43,7 +45,7 @@ from frost.client import APIError, Frost
 f = Frost()
 res = f.get_sources(county='12')
 
-# return as Pandas Dataframe
+# return as Pandas Dataframe (requires Pandas installed)
 df = res.to_df()
 
 # return IDs of sources as list

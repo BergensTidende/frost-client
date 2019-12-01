@@ -1,6 +1,4 @@
 import pprint
-from pandas.io.json import json_normalize
-import pandas as pd
 
 
 class SourcesResponse(object):
@@ -21,23 +19,31 @@ class SourcesResponse(object):
             columns
 
         """
+        try:
+            from pandas.io.json import json_normalize
+            import pandas as pd
+        except ImportError:
+            # dependency missing, issue a warning
+            import warnings
+            warnings.warn('Pandas dependency not found, please install with pip install frost-client[pandas] to enable to_df() feature')
+            return None
+        else:
+            compact_columns = ["id", "name",
+                            "shortName", "county", "countyId",
+                            "municipality", "municipalityId"]
 
-        compact_columns = ["id", "name",
-                           "shortName", "county", "countyId",
-                           "municipality", "municipalityId"]
+            df = json_normalize(self.sources)
 
-        df = json_normalize(self.sources)
+            # change date columns to datetime
+            date_columns = ['validFrom', 'validTo']
 
-        # change date columns to datetime
-        date_columns = ['validFrom', 'validTo']
+            for c in date_columns:
+                if c in df.columns:
+                    df[c] = pd.to_datetime(df[c], errors='coerce')
 
-        for c in date_columns:
-            if c in df.columns:
-                df[c] = pd.to_datetime(df[c], errors='coerce')
-
-        if compact:
-            return df[compact_columns]
-        return df
+            if compact:
+                return df[compact_columns]
+            return df
 
     def to_list(self):
         """Returns the sources as a Python list of dicts"""
