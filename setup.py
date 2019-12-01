@@ -7,7 +7,7 @@ def readme():
 
 
 setup(name='frost-client',
-      version='0.1.3',
+      version='0.1.4',
       description='Python wrapper for the frost.met.no API',
       long_description=readme(),
       long_description_content_type='text/markdown',
