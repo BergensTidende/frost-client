@@ -29,7 +29,7 @@ setup(name='frost-client',
       ],
       extras_require={
         'pandas':  ["pandas"]
-      }
+      },
       test_suite='nose.collector',
       tests_require=['nose'],
       zip_safe=False)
