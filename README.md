@@ -28,6 +28,8 @@ or using pipenv:
 
 `pipenv install frost-client[pandas]`
 
+**Note about zsh:** If you're using zsh add `unsetopt nomatch`to your .zshrc
+
 ## Usage
 
 The Frost API key should be exposed as a environment variable:
