@@ -29,7 +29,7 @@ class AvailableTimeSeriesResponse(object):
         """
         try:
             import pandas as pd
-            from pandas.io.json import json_normalize
+            from pandas import json_normalize
         except ImportError:
             # dependency missing, issue a warning
             import warnings
