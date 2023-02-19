@@ -2,7 +2,7 @@ import pprint
 
 
 class SourcesResponse(object):
-    """ Response object for source endpoint """
+    """Response object for source endpoint"""
 
     def __init__(self, sources_json):
         self.sources = sources_json
@@ -25,23 +25,35 @@ class SourcesResponse(object):
         except ImportError:
             # dependency missing, issue a warning
             import warnings
-            warnings.warn('Pandas dependency not found, please install with pip install frost-client[pandas] to enable to_df() feature')
+
+            warnings.warn(
+                """
+                Pandas dependency not found, please install with 
+                pip install frost-client[pandas] to enable to_df() feature
+                """
+            )
             return None
         else:
-            compact_columns = ["id", "name",
-                            "shortName", "county", "countyId",
-                            "municipality", "municipalityId"]
-
-            df = json_normalize(self.sources)
+            df = pd.json_normalize(self.sources)
 
             # change date columns to datetime
-            date_columns = ['validFrom', 'validTo']
+            date_columns = ["validFrom", "validTo"]
 
             for c in date_columns:
                 if c in df.columns:
-                    df[c] = pd.to_datetime(df[c], errors='coerce')
+                    df[c] = pd.to_datetime(df[c], errors="coerce")
 
             if compact:
+                compact_columns = [
+                    "id",
+                    "name",
+                    "shortName",
+                    "county",
+                    "countyId",
+                    "municipality",
+                    "municipalityId",
+                ]
+
                 return df[compact_columns]
             return df
 
@@ -52,4 +64,4 @@ class SourcesResponse(object):
     def to_ids_list(self):
         """Returns only station IDs as a Python list"""
 
-        return [s['id'] for s in self.sources]
+        return [s["id"] for s in self.sources]
