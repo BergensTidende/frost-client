@@ -1,1 +1,1 @@
-from .client import Frost
+from .client import Frost  # noqa: F401

@@ -1,17 +1,19 @@
 import pprint
+from typing import Any, Dict, List
 
 
 class SourcesResponse(object):
     """Response object for source endpoint"""
 
-    def __init__(self, sources_json):
+    def __init__(self, sources_json: List[Dict[str, Any]]) -> None:
         self.sources = sources_json
 
-    def to_str(self):
+    def to_str(self) -> str:
         """Returns the string representation of the data"""
         return pprint.pformat(self.sources)
 
-    def to_df(self, compact=False):
+    # Set to Any so code works even if pandas is not installed
+    def to_df(self, compact: bool = False) -> Any:
         """
         Returns a Pandas DataFrame representation of the model
 
@@ -20,7 +22,6 @@ class SourcesResponse(object):
 
         """
         try:
-            from pandas.io.json import json_normalize
             import pandas as pd
         except ImportError:
             # dependency missing, issue a warning
@@ -28,7 +29,7 @@ class SourcesResponse(object):
 
             warnings.warn(
                 """
-                Pandas dependency not found, please install with 
+                Pandas dependency not found, please install with
                 pip install frost-client[pandas] to enable to_df() feature
                 """
             )
@@ -57,11 +58,11 @@ class SourcesResponse(object):
                 return df[compact_columns]
             return df
 
-    def to_list(self):
+    def to_list(self) -> List[Dict[str, Any]]:
         """Returns the sources as a Python list of dicts"""
         return self.sources
 
-    def to_ids_list(self):
+    def to_ids_list(self) -> List[str]:
         """Returns only station IDs as a Python list"""
 
         return [s["id"] for s in self.sources]

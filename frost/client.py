@@ -1,13 +1,19 @@
-import os
+from os import getenv
+from typing import Any, Dict, List
 from urllib.parse import urljoin
-import requests
-from requests.auth import HTTPBasicAuth
-from .models import SourcesResponse
-from .models import AvailableTimeSeriesResponse
-from .models import ObservationsResponse
-from .models import FrequenciesResponse
 
-FROST_API_KEY = os.environ.get("FROST_API_KEY", None)
+import requests
+from dotenv import load_dotenv
+
+from .models import (
+    AvailableTimeSeriesResponse,
+    FrequenciesResponse,
+    ObservationsResponse,
+    SourcesResponse,
+)
+
+load_dotenv()
+FROST_API_KEY = getenv("FROST_API_KEY", None)
 
 
 class APIError(Exception):
@@ -30,7 +36,7 @@ class Frost(object):
     >>>  frost = Frost(username="myapikey")
     """
 
-    def __init__(self, username=None):
+    def __init__(self, username=None) -> None:
         """
         :param str username: your own frost.met.no username/key.
         """
@@ -48,7 +54,7 @@ class Frost(object):
             )
         self.session.auth = (self.username, "")
 
-    def let_it_go(self):
+    def let_it_go(self) -> str:
         return """
         Let it go, let it go
         Can't hold it back anymore
@@ -59,13 +65,13 @@ class Frost(object):
         The cold never bothered me anyway
         """
 
-    def stringify_kwargs(self, kwargs):
+    def stringify_kwargs(self, kwargs: Dict[str, Any]) -> str:
         for key, value in kwargs.items():
             if type(kwargs[key]) == list:
                 kwargs[key] = ",".join(value)
         return kwargs
 
-    def make_request(self, method, **kwargs):
+    def make_request(self, method, **kwargs: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Make an API request, with all kwargs passed through as URL params
         """
@@ -80,7 +86,7 @@ class Frost(object):
             raise APIError(json["error"])
         return json
 
-    def get_sources(self, **kwargs):
+    def get_sources(self, **kwargs):  # type: ignore [no-untyped-def]
         """Get metadata for the source entitites defined in the Frost API.
         Use the query parameters to filter the set of sources returned.
 
@@ -136,7 +142,9 @@ class Frost(object):
         res = self.make_request("sources", **kwargs)
         return SourcesResponse(res)
 
-    def get_available_timeseries(self, include_sourcemeta=False, **kwargs):
+    def get_available_timeseries(
+        self, include_sourcemeta=False, **kwargs: Dict[str, Any]
+    ) -> AvailableTimeSeriesResponse:
         """Find timeseries metadata by source and/or element
 
         :param bool include_sourcemeta: If True will return a tuple with time
@@ -198,7 +206,9 @@ class Frost(object):
 
         return AvailableTimeSeriesResponse(res, sources=sources)
 
-    def get_observations(self, include_sourcemeta=False, **kwargs):
+    def get_observations(
+        self, include_sourcemeta=False, **kwargs: Dict[str, Any]
+    ) -> ObservationsResponse:
         """Get observation data from the Frost API.
 
         :param bool include_sourcemeta: If True will return a tuple
@@ -264,7 +274,9 @@ class Frost(object):
 
         return ObservationsResponse(res, sources=sources)
 
-    def get_frequencies(self, include_sourcemeta=False, **kwargs):
+    def get_frequencies(
+        self, include_sourcemeta=False, **kwargs: Dict[str, Any]
+    ) -> FrequenciesResponse:
         """Get observation data from the Frost API.
 
         :param bool include_sourcemeta: If True will return a tuple

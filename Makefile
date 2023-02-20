@@ -54,10 +54,6 @@ lint-mypy-report: ## run mypy & create report
 
 lint: lint-black lint-isort lint-flake8 lint-mypy ## run all linters
 
-.PHONY: mock
-mock: ## make mocsk for testing
-	@poetry run python tests/make_mock_data.py
-
 .PHONY: test
 test: ## run tests
 	@poetry run pytest -v --cov=frost --cov-report=term-missing

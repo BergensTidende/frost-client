@@ -36,7 +36,7 @@ class AvailableTimeSeriesResponse(object):
 
             warnings.warn(
                 """
-                Pandas dependency not found, please install with 
+                Pandas dependency not found, please install with
                 pip install frost-client[pandas] to enable to_df() feature
                 """
             )
