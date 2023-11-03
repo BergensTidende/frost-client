@@ -23,7 +23,7 @@ setup(name='frost-client',
       license='MIT',
       keywords='weather pandas ',
       packages=find_packages(exclude=('tests',)),
-      python_requires='>= 3.6',
+      python_requires='>= 3.9',
       install_requires=[
           'requests'
       ],

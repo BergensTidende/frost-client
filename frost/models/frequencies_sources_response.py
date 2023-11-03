@@ -3,25 +3,25 @@ from typing import List
 import pandas as pd
 
 from frost.models import Response
-from frost.types import FrostSource
+from frost.types import FrostRainfallIDFSource
 
 
-class SourcesResponse(Response):
-    """Response object for source endpoint"""
+class FrequenciesSourcesResponse(Response):
+    """Response object for sources for frequnecises endpoint"""
 
-    data: List[FrostSource]
+    data: List[FrostRainfallIDFSource]
 
-    def __init__(self, data: List[FrostSource]) -> None:
+    def __init__(self, data: List[FrostRainfallIDFSource]) -> None:
         self.data = data
         self.date_colums = ["validFrom", "validTo"]
         self.compact_columns = [
-            "id",
-            "name",
-            "shortName",
-            "county",
-            "countyId",
-            "municipality",
-            "municipalityId",
+            "sourceId",
+            "version",
+            "validFrom",
+            "validTo",
+            "numberOfSeasons",
+            "firstYearOfPeriod",
+            "lastYearOfPeriod",
         ]
 
     def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
@@ -33,10 +33,6 @@ class SourcesResponse(Response):
         """
         return pd.json_normalize(self.data)
 
-    def to_list(self) -> List[FrostSource]:
+    def to_list(self) -> List[FrostRainfallIDFSource]:
         """Returns the sources as a Python list of dicts"""
         return self.data
-
-    def to_ids_list(self) -> List[str]:
-        """Returns only station IDs as a Python list"""
-        return [s["id"] for s in self.data]

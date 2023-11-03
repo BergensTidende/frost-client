@@ -1,5 +1,5 @@
 from os import getenv
-from typing import Any, Dict, List
+from typing import List, Optional, Union, cast
 from urllib.parse import urljoin
 
 import requests
@@ -8,8 +8,23 @@ from dotenv import load_dotenv
 from .models import (
     AvailableTimeSeriesResponse,
     FrequenciesResponse,
+    FrequenciesSourcesResponse,
     ObservationsResponse,
     SourcesResponse,
+)
+from .types import (
+    FrostAvailableSourcesFrequenciesArgs,
+    FrostAvailableTimeSeriesArgs,
+    FrostDataTypes,
+    FrostFrequenciesArgs,
+    FrostObservationsArgs,
+    FrostObservationsResponse,
+    FrostObservationTimeSeriesResponse,
+    FrostRainfallIDFResponse,
+    FrostResponse,
+    FrostResponseError,
+    FrostSourceArgs,
+    FrostType,
 )
 
 load_dotenv()
@@ -19,8 +34,14 @@ FROST_API_KEY = getenv("FROST_API_KEY", None)
 class APIError(Exception):
     """Raised when the API responds with a 400 og 404"""
 
-    def __init__(self, e):
+    code: str
+    message: str
+    reason: str
+
+    def __init__(self, e: FrostResponseError) -> None:
         self.code = e["code"]
+        self.message = e["message"]
+        self.reason = e["reason"]
 
 
 class Frost(object):
@@ -36,7 +57,7 @@ class Frost(object):
     >>>  frost = Frost(username="myapikey")
     """
 
-    def __init__(self, username=None) -> None:
+    def __init__(self, username: Optional[str] = None) -> None:
         """
         :param str username: your own frost.met.no username/key.
         """
@@ -65,28 +86,67 @@ class Frost(object):
         The cold never bothered me anyway
         """
 
-    def stringify_kwargs(self, kwargs: Dict[str, Any]) -> str:
-        for key, value in kwargs.items():
-            if type(kwargs[key]) == list:
-                kwargs[key] = ",".join(value)
-        return kwargs
-
-    def make_request(self, method, **kwargs: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """
-        Make an API request, with all kwargs passed through as URL params
-        """
+    def make_request(
+        self,
+        method: str,
+        args: Union[
+            FrostSourceArgs,
+            FrostObservationsArgs,
+            FrostAvailableTimeSeriesArgs,
+            FrostAvailableSourcesFrequenciesArgs,
+            FrostFrequenciesArgs,
+        ],
+    ) -> Optional[List[FrostDataTypes]]:
         url = urljoin(self.base_url, f"{method}/{self.api_version}.jsonld")
-        response = self.session.get(url, params=kwargs, timeout=60)
+
+        stringified_args = {
+            key: ",".join(map(str, value)) if isinstance(value, list) else str(value)
+            for key, value in args.items()
+        }
+
+        response = self.session.get(url, params=stringified_args, timeout=60)
+
         if response.status_code < 200 or response.status_code > 500:
             response.raise_for_status()
-        json = response.json()
+
+        json: FrostResponse = response.json()
+
         if "data" in json:
             return json["data"]
         if "error" in json:
             raise APIError(json["error"])
-        return json
+        else:
+            raise APIError({"code": "no data", "message": "no data field in json"})
 
-    def get_sources(self, **kwargs):  # type: ignore [no-untyped-def]
+    def get_source_ids(self, result: Optional[List[FrostDataTypes]]) -> List[str]:
+        """Get source IDs from a list of Frost API data types
+
+        :param list args: list of Frost API data types
+
+        :returns: list of source IDs
+
+        """
+        source_ids: List[str] = []
+
+        if not result:
+            return []
+
+        # Iterate over all items, checking the type based on the "tag"
+        for item in result:
+            if isinstance(item, dict) and "sourceId" in item:
+                response_item = cast(
+                    Union[
+                        FrostObservationsResponse,
+                        FrostRainfallIDFResponse,
+                        FrostObservationTimeSeriesResponse,
+                    ],
+                    item,
+                )
+                source_ids.append(response_item["sourceId"].split(":")[0])
+
+        return list(set(source_ids))
+
+    def get_sources(self, **kwargs: FrostType) -> SourcesResponse:
         """Get metadata for the source entitites defined in the Frost API.
         Use the query parameters to filter the set of sources returned.
 
@@ -108,7 +168,7 @@ class Frost(object):
             The default is 'now', i.e. only currently valid/applicable
             sources are included.
         :param str name: If specified, only sources whose 'name' attribute
-            matches this
+            matches this. Enter at list seperated with comma or Python list.
         :param str country: If specified, only sources whose 'country'
             or 'countryCode' attribute matches this
         :param str county: If specified, only sources whose 'county'
@@ -120,9 +180,9 @@ class Frost(object):
         :param str stationholder: If specified, only sources whose
             'stationHolders' attribute contains at least one name that
             matches this
-        :param str externalid: If specified, only sources whose 'externalIds'
+        :param str externalids: If specified, only sources whose 'externalIds'
             attribute contains at least one name that matches this
-        :param str fields: A  list of the fields that should be
+        :param str fields: A list or Python list of the fields that should be
             present in the response.
 
         :returns: :meth:`SourcesResponse`
@@ -133,17 +193,26 @@ class Frost(object):
         :examples:
 
             >>> f = Frost()
-            >>> f.get_sources(county='12')
+            >>> f.get_sources(county='46')
 
         """
+        args = cast(FrostSourceArgs, kwargs)
+        res = self.make_request("sources", args)
 
-        kwargs = self.stringify_kwargs(kwargs)
+        if res is None:
+            raise APIError({"code": "no data", "message": "no data field in json"})
 
-        res = self.make_request("sources", **kwargs)
-        return SourcesResponse(res)
+        filtered_res = [item for item in res if item["tag"] == "FrostSource"]
+
+        if filtered_res:
+            return SourcesResponse(data=filtered_res)
+        else:
+            raise APIError(
+                {"code": "invalid data", "message": "No valid FrostSource items found"}
+            )
 
     def get_available_timeseries(
-        self, include_sourcemeta=False, **kwargs: Dict[str, Any]
+        self, include_sourcemeta: bool = False, **kwargs: FrostType
     ) -> AvailableTimeSeriesResponse:
         """Find timeseries metadata by source and/or element
 
@@ -179,9 +248,9 @@ class Frost(object):
             list of
             numbers, e.g. '0.1,2,10,20'. If left out, the output is not
             filtered on sensor level.
-        :param str level_types: The sensor level types to get records for as a
+        :param str levelTypes: The sensor level types to get records for as a
             list of search filters
-        :param str level_units: The sensor level units to get records for as a
+        :param str levelUnits: The sensor level units to get records for as a
             list of search filters
         :param str fields: Fields to include in the output as a  list.
             If specified, only these fields are included in the output.
@@ -193,21 +262,37 @@ class Frost(object):
             not found.
 
         """
+        args = cast(FrostAvailableTimeSeriesArgs, kwargs)
 
-        kwargs = self.stringify_kwargs(kwargs)
-
-        res = self.make_request("observations/availableTimeSeries", **kwargs)
+        res = self.make_request(
+            "observations/availableTimeSeries",
+            args,
+        )
 
         sources = None
 
         if include_sourcemeta:
-            source_ids = list({s["sourceId"].split(":")[0] for s in res})
+            source_ids = self.get_source_ids(res)
             sources = self.get_sources(ids=source_ids)
 
-        return AvailableTimeSeriesResponse(res, sources=sources)
+        if res is None:
+            raise APIError({"code": "no data", "message": "no data field in json"})
+
+        filtered_res = [
+            item for item in res if item["tag"] == "FrostObservationTimeSeriesResponse"
+        ]
+        if filtered_res:
+            return AvailableTimeSeriesResponse(data=filtered_res, sources=sources)
+        else:
+            raise APIError(
+                {
+                    "code": "invalid data",
+                    "message": "No valid FrostObservationTimeSeriesResponse items",
+                }
+            )
 
     def get_observations(
-        self, include_sourcemeta=False, **kwargs: Dict[str, Any]
+        self, include_sourcemeta: bool = False, **kwargs: FrostType
     ) -> ObservationsResponse:
         """Get observation data from the Frost API.
 
@@ -261,21 +346,68 @@ class Frost(object):
             not found.
 
         """
-
-        kwargs = self.stringify_kwargs(kwargs)
-
-        res = self.make_request("observations", **kwargs)
+        args = cast(FrostObservationsArgs, kwargs)
+        res = self.make_request("observations", args)
 
         sources = None
 
         if include_sourcemeta:
-            source_ids = list({s["sourceId"].split(":")[0] for s in res})
+            source_ids = self.get_source_ids(res)
             sources = self.get_sources(ids=source_ids)
 
-        return ObservationsResponse(res, sources=sources)
+        if res is None:
+            raise APIError({"code": "no data", "message": "no data field in json"})
+
+        filtered_res = [
+            item for item in res if item["tag"] == "FrostObservationsResponse"
+        ]
+        if filtered_res:
+            return ObservationsResponse(data=filtered_res, sources=sources)
+        else:
+            raise APIError(
+                {
+                    "code": "invalid data",
+                    "message": "No valid FrostObservationsResponse items found",
+                }
+            )
+
+    def get_available_sources_frequencies(
+        self, **kwargs: FrostType
+    ) -> FrequenciesSourcesResponse:
+        """Get available sources for rainfall IDF data
+
+        :param list/str sources: The ID(s) of the data sources to get
+            observations for as a  list of Frost API station
+            IDs, e.g. _SN18700_ for Blindern.
+        :param str types: The type(s) of Frost API source that you want information for.
+            Enter a comma-separated list to select multiple types.
+        :param str fields: A comma-separated list of the fields that should be present
+            in the response. The sourceId attribute will always be returned in the
+            query result. Leaving this parameter empty returns all attributes;
+            otherwise only those properties listed will be visible in the result set
+            (in addition to the sourceId)
+
+        :returns: :meth:`FrequenciesSourcesResponse`
+
+        :raises APIError: raises exception if error in the returned data or
+            not found.
+        """
+        args = cast(FrostAvailableSourcesFrequenciesArgs, kwargs)
+        res = self.make_request("frequencies", args)
+
+        if res is None:
+            raise APIError({"code": "no data", "message": "no data field in json"})
+
+        filtered_res = [item for item in res if item["tag"] == "FrostRainfallIDFSource"]
+        if filtered_res:
+            return FrequenciesSourcesResponse(data=filtered_res)
+        else:
+            raise APIError(
+                {"code": "invalid data", "message": "No valid FrostSource items found"}
+            )
 
     def get_frequencies(
-        self, include_sourcemeta=False, **kwargs: Dict[str, Any]
+        self, include_sourcemeta: bool = False, **kwargs: FrostType
     ) -> FrequenciesResponse:
         """Get observation data from the Frost API.
 
@@ -284,60 +416,53 @@ class Frost(object):
         :param list/str sources: The ID(s) of the data sources to get
             observations for as a  list of Frost API station
             IDs, e.g. _SN18700_ for Blindern.
-        :param str referencetime: The time range to get observations
-            for in either
-            extended ISO-8601 format or the single word 'latest'.
-        :param list/str elements: The elements to get observations for as a
-            list of names that follow the Frost API naming convention.
-        :param str format: The output format of the result. (required)
-        :param str maxage: The maximum observation age as an ISO-8601 period,
-            like 'P1D'. Applicable only when referencetime=latest. In general,
-            the lower the value of maxage, the shorter the request will take
-            to complete. The default value is 'PT3H'.
-        :param str limit: The maximum number of observation times to be
-            returned for each source/element combination, counting from the
-            most recent time. Applicable only when referencetime=latest.
-            Specify either 'all' to get all available times, or a positive
-            integer. The default value is 1.
-        :param list/str timeoffsets: The time offsets to get observations
-            for as a  list of ISO-8601 periods, e.g. 'PT6H,PT18H'.
-            If left out, the output is not filtered on time offset.
-        :param list/str timeresolutions: The time resolutions to
-            get observations for as a  list of ISO-8601 periods, e.g.
-            'PT6H,PT18H'. If left out, the output is not filtered on time
-            resolution.
-        :param str timeseriesids: The internal time series IDs to get
-            observations for as a  list of integers, e.g. '0,1'.
-            If left out, the output is not filtered on internal time series ID.
-        :param str performancecategories: The performance categories to
-            get observations for as a  list of letters, e.g. 'A,C'.
-            Enter a  list to specify multiple performance categories.
-            If left out, the output is not filtered on performance category.
-        :param str exposurecategories: The exposure categories to
-            get observations for as a  list of integers, e.g. '1,2'.
-            If left out, the output is not filtered on exposure category.
-        :param str levels: The sensor levels to get observations for as a
-            list of numbers, e.g. '0.1,2,10,20'.
-            If left out, the output is not filtered on sensor level.
-        :param str fields: Fields to include in the output as a
-            list. If specified, only these fields are included in the output.
-            If left out, all fields are included.
+        :param str location: The geographic position from which to get IDF data in case
+            of a gridded dataset. Format: POINT(<longitude degrees> <latitude degrees>).
+            Data from the nearest grid point is returned.
+        :param str durations: The Frost API IDF duration(s), in minutes, that you want
+            IDF data for. Enter a comma-separated list to select multiple durations.
+        :param str frequencies: The Frost API IDF frequencies (return periods), in
+            years, that you want IDF data for. Enter a comma-separated list to select
+            multiple frequencies.
+        :param str unit: The unit of measure for the intensity. Specify 'mm' for
+            millimetres per minute multiplied by the duration, or 'lsha' for
+            litres per second per hectar. The default unit is 'lsha'
+        :param str fields: A comma-separated list of the fields that should be present
+            in the response. The sourceId and values attributes will always be returned
+            in the query result. Leaving this parameter empty returns all attributes;
+            otherwise only those properties listed will be visible in the result set
+            (in addition to the sourceId and values);
+            e.g.: unit,numberOfSeasons will show only sourceId, unit, numberOfSeasons,
+            and values in the response.
 
-        :returns: :meth:`ObservationsResponse`
+
+        :returns: :meth:`FrequenciesResponse`
 
         :raises APIError: raises exception if error in the returned data or
             not found.
 
         """
-
-        kwargs = self.stringify_kwargs(kwargs)
-
-        res = self.make_request("frequencies", **kwargs)
+        args = cast(FrostFrequenciesArgs, kwargs)
+        res = self.make_request("frequencies", args)
 
         sources = None
 
         if include_sourcemeta:
-            source_ids = list({s["sourceId"].split(":")[0] for s in res})
+            source_ids = self.get_source_ids(res)
             sources = self.get_sources(ids=source_ids)
 
-        return FrequenciesResponse(res, sources=sources)
+        if res is None:
+            raise APIError({"code": "no data", "message": "no data field in json"})
+
+        filtered_res = [
+            item for item in res if item["tag"] == "FrostRainfallIDFResponse"
+        ]
+        if filtered_res:
+            return FrequenciesResponse(data=filtered_res, sources=sources)
+        else:
+            raise APIError(
+                {
+                    "code": "invalid data",
+                    "message": "No valid FrostRainfallIDFResponse items found",
+                }
+            )

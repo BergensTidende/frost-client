@@ -103,3 +103,6 @@ venv.bak/
 # mypy
 .mypy_cache/
 notebooks/Notebook.ipynb
+
+frosttypes/types.py
+frosttypes/fixed-types.py

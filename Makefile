@@ -58,6 +58,12 @@ lint: lint-black lint-isort lint-flake8 lint-mypy ## run all linters
 test: ## run tests
 	@poetry run pytest -v --cov=frost --cov-report=term-missing
 
+##@ Create models
+.PHONY: create-models
+create-models: ## create models from frost swagger
+	@poetry run datamodel-codegen --url https://frost.met.no/swagger.json --output frosttypes/types.py --input-file-type jsonschema --output-model-type typing.TypedDict
+	@poetry run python frosttypes/fix-types.py
+
 ##@ Releases
 .PHONY: bump-patch
 bump-patch: ## bump version patch

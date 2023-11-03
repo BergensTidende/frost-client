@@ -1,12 +1,18 @@
-import pprint
-from typing import Any, Dict, List
+from typing import List, Optional
 
-from frost.models.sources_response import SourcesResponse
+import pandas as pd
+
+from frost.models import Response, SourcesResponse
+from frost.types import FrostObservationsResponse
 
 
-class ObservationsResponse(object):
+class ObservationsResponse(Response):
+    data: List[FrostObservationsResponse]
+
     def __init__(
-        self, series_json: List[Dict[str, Any]], sources: SourcesResponse = None
+        self,
+        data: List[FrostObservationsResponse],
+        sources: Optional[SourcesResponse] = None,
     ) -> None:
         """
         Initialize a response class
@@ -15,42 +21,27 @@ class ObservationsResponse(object):
         :param SourceResponse sources: Optional instance of sources response
 
         """
-        self.series = series_json
+        self.data = data
         self.sources = sources
+        self.date_columns = ["referenceTime"]
+        self.compact_columns = [
+            "stationId",
+            "sourceId",
+            "validFrom",
+            "timeOffset",
+            "timeResolution",
+            "elementId",
+            "unit",
+        ]
 
-    def to_str(self) -> str:
-        """Returns the string representation of the data"""
-        return pprint.pformat(self.series)
+    def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
+        """Normalizes the JSON data into a dataframe. This method must be implemented
+        in child classes because the JSON structure is different for each endpoint.
 
-    def to_df(self, compact: bool = False) -> Any:
+        :return pd.DataFrame: the dataframe after normalization
         """
-        Returns a Pandas DataFrame representation of the model
-
-        :param bool compact: If True returns a compact version with
-            fewer columns
-        :param bool include_sourcemeta: If True will join in
-            metadata (name etc) about the sources fewer columns
-
-        """
-        try:
-            import pandas as pd
-        except ImportError:
-            # dependency missing, issue a warning
-            import warnings
-
-            warnings.warn(
-                """
-                Pandas dependency not found, please install with
-                pip install frost-client[pandas] to enable to_df() feature
-                """
-            )
-            return None
-        else:
-            return self.generate_dataframe(pd, compact)
-
-    def generate_dataframe(self, pd: Any, compact: bool) -> Any:
-        df = pd.json_normalize(
-            self.series,
+        return pd.json_normalize(
+            self.data,
             "observations",
             [
                 "sourceId",
@@ -58,48 +49,7 @@ class ObservationsResponse(object):
             ],
             errors="ignore",
         )
-        # change date columns to datetime
-        date_columns = ["referenceTime"]
 
-        for c in date_columns:
-            if c in df.columns:
-                df[c] = pd.to_datetime(df[c])
-
-        # create an extra column with normalized sourceId
-        df["stationId"] = df["sourceId"].apply(lambda x: x.split(":")[0])
-
-        if compact:
-            compact_columns = [
-                "stationId",
-                "sourceId",
-                "validFrom",
-                "timeOffset",
-                "timeResolution",
-                "elementId",
-                "unit",
-            ]
-
-            df = df[compact_columns]
-
-        # if we have metadataon the sources, merge it in
-        if self.sources:
-            sources_df = self.sources.to_df(compact=compact)
-            sources_df = sources_df.add_prefix("source.")
-            df = df.merge(
-                sources_df, how="left", left_on="stationId", right_on="source.id"
-            )
-
-        return df
-
-    def to_list(self) -> List[Dict[str, Any]]:
+    def to_list(self) -> List[FrostObservationsResponse]:
         """Returns the sources as a Python list of dicts"""
-        return self.series
-
-    def get_source_ids(self) -> List[str]:
-        """Returns unique source ids as a list"""
-        return list({s["sourceId"].split(":")[0] for s in self.series})
-
-    def to_ids_list(self) -> List[str]:
-        """Returns only station IDs as a Python list"""
-
-        return [s["uri"] for s in self.series]
+        return self.data
