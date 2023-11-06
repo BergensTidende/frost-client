@@ -9,7 +9,75 @@ from frost.models import (
     SourcesResponse,
 )
 
-class TestFrostRequests():
+from frost.types import FrostResponseError
+
+# Test data for happy path, edge cases, and error cases
+test_data = [
+    # Happy path tests with various realistic test values
+    {
+        "id": "HP1",
+        "input": {
+            "code": "400",
+            "message": "Bad Request",
+            "reason": "Invalid parameters",
+        },
+        "expected": {
+            "code": "400",
+            "message": "Bad Request",
+            "reason": "Invalid parameters",
+        },
+    },
+    {
+        "id": "HP2",
+        "input": {
+            "code": "404",
+            "message": "Not Found",
+            "reason": "Resource not found",
+        },
+        "expected": {
+            "code": "404",
+            "message": "Not Found",
+            "reason": "Resource not found",
+        },
+    },
+    # Edge cases
+    {
+        "id": "EC1",
+        "input": {"code": "", "message": "", "reason": ""},
+        "expected": {"code": "", "message": "", "reason": ""},
+    },
+    # Error cases
+    {
+        "id": "EC1",
+        "input": {
+            "code": "500",
+            "message": "Internal Server Error",
+            "reason": "Server error",
+        },
+        "expected": {
+            "code": "500",
+            "message": "Internal Server Error",
+            "reason": "Server error",
+        },
+    },
+]
+
+
+@pytest.mark.parametrize("test_case", test_data, ids=[tc["id"] for tc in test_data])
+def test_api_error_init(test_case):
+    # Arrange
+    input_data = FrostResponseError(**test_case["input"])
+
+    # Act
+    api_error = APIError(input_data)
+
+    # Assert
+    assert api_error.code == test_case["expected"]["code"]
+    assert api_error.message == test_case["expected"]["message"]
+    assert api_error.reason == test_case["expected"]["reason"]
+
+
+class TestFrostRequests:
     def test_make_request(self, frost):
         res = frost.make_request("sources", county="46")
         assert isinstance(res, list)
@@ -31,7 +99,6 @@ class TestFrostRequests():
         assert isinstance(res_str, str)
         df_res = res.to_df()
         assert isinstance(df_res, DataFrame)
-
 
     def test_get_available_timeseries_sourceids(self, frost):
         res = frost.get_available_timeseries(sources=["SN50500", "SN50540"])
@@ -89,4 +156,7 @@ class TestFrostRequests():
             )
             the_exception = cm.exception
             assert isinstance(the_exception, APIError)
-            assert str(the_exception) == "{'code': 412, 'message': '412', 'reason': 'No time series found for this combination of parameters, check /observations/availableTimeSeries for more information.'}"
+            assert (
+                str(the_exception)
+                == "{'code': 412, 'message': '412', 'reason': 'No time series found for this combination of parameters, check /observations/availableTimeSeries for more information.'}"
+            )
