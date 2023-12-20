@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import List
 
 import pandas as pd
-from frost.models.response import Response
 
+from frost.models.response import Response
 from frost.types import FrostSource
 
 
@@ -15,10 +15,7 @@ class SourcesResponse(Response):
 
     def __init__(self, data: List[FrostSource]) -> None:
         if isinstance(data, list):
-            self.data = data
-        elif data is None:
-            # Handling None as an empty list
-            self.data = []
+            self.data = data or []
         else:
             # If data is not a list, a single FrostSource, or None, raise an error
             raise TypeError("Data must be a list of FrostSource instances")

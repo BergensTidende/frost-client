@@ -5,7 +5,6 @@ from typing import List
 import pandas as pd
 
 from frost.models.response import Response
-
 from frost.types import FrostRainfallIDFSource
 
 

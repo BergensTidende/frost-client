@@ -31,17 +31,18 @@ from frost.types import (
 
 load_dotenv()
 
-class APIError(Exception):
-    """Raised when the API responds with a 400 og 404"""
 
-    code: str
-    message: str
+class APIError(Exception):
+    """Raised when the API responds with a 400 or 404"""
+
+    code: Optional[str]
+    message: Optional[str]
     reason: Optional[str]
 
     def __init__(self, e: FrostResponseError) -> None:
-        self.code = e["code"] if "code" in e else None
-        self.message = e["message"] if "message" in e else None
-        self.reason = e["reason"] if "reason" in e else None
+        self.code = e.get("code")
+        self.message = e.get("message")
+        self.reason = e.get("reason")
 
 
 class Frost(object):
@@ -57,9 +58,7 @@ class Frost(object):
     >>>  frost = Frost(username="myapikey")
     """
 
-    def __init__(
-        self, username: Optional[str] = None
-    ) -> None:
+    def __init__(self, username: Optional[str] = None) -> None:
         """
         :param str username: your own frost.met.no username/key.
         """

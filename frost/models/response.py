@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pprint
 from typing import (
+    TYPE_CHECKING,
     Callable,
     ClassVar,
     Generic,
@@ -10,7 +11,6 @@ from typing import (
     TypeVar,
     Union,
     cast,
-    TYPE_CHECKING,
 )
 
 import pandas as pd
@@ -86,7 +86,7 @@ class Response(Generic[ResponseTypes]):
         self, compact: bool = False
     ) -> pd.DataFrame:
         df = self.normalize_json()
-        df = convert_date_columns(df, self.date_colums)
+        df = convert_date_columns(df, self.date_columns)
         df = create_station_id_column(df)
 
         if compact:
@@ -105,22 +105,20 @@ class Response(Generic[ResponseTypes]):
         # Iterate over all items, checking the type based on the "tag"
         for item in self.data:
             if isinstance(item, dict):
-                if item.get("tag") == "FrostSource":
-                    # Cast the item to FrostSource and get the "id"
-                    if "id" in item and item["id"]:
-                        source_item = cast(FrostSource, item)
-                        source_ids.append(source_item["id"].split(":")[0])
-                elif "sourceId" in item and item["sourceId"]:
-                    response_item = cast(
-                        Union[
-                            FrostRainfallIDFSource,
-                            FrostRainfallIDFResponse,
-                            FrostObservationsResponse,
-                            FrostObservationTimeSeriesResponse,
-                        ],
-                        item,
-                    )
-                    source_ids.append(response_item["sourceId"].split(":")[0])
+                if item.get("tag") == "FrostSource" and "id" in item:
+                    source_item = cast(FrostSource, item)
+                    source_ids.append(source_item["id"].split(":")[0])
+            elif "sourceId" in item and item["sourceId"]:
+                response_item = cast(
+                    Union[
+                        FrostRainfallIDFSource,
+                        FrostRainfallIDFResponse,
+                        FrostObservationsResponse,
+                        FrostObservationTimeSeriesResponse,
+                    ],
+                    item,
+                )
+                source_ids.append(response_item["sourceId"].split(":")[0])
 
         return list(set(source_ids))
 
