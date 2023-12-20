@@ -1,9 +1,20 @@
+from __future__ import annotations
+
 import pprint
-from typing import Callable, ClassVar, Generic, List, Optional, TypeVar, Union, cast
+from typing import (
+    Callable,
+    ClassVar,
+    Generic,
+    List,
+    Optional,
+    TypeVar,
+    Union,
+    cast,
+    TYPE_CHECKING,
+)
 
 import pandas as pd
 
-from frost.models import SourcesResponse
 from frost.types import (
     FrostObservationsResponse,
     FrostObservationTimeSeriesResponse,
@@ -22,16 +33,19 @@ ResponseTypes = TypeVar(
     FrostSource,
 )
 
+if TYPE_CHECKING:
+    from frost.models import SourcesResponse
+
 
 class Response(Generic[ResponseTypes]):
     RET_TYPE: ClassVar[Callable]
     data: List[ResponseTypes]
-    sources: Optional[SourcesResponse]
-    date_colums: List[str]
+    sources: Optional["SourcesResponse"]
+    date_columns: List[str]
     compact_columns: List[str]
 
     def __init__(
-        self, data: List[ResponseTypes], sources: Optional[SourcesResponse]
+        self, data: List[ResponseTypes], sources: Optional["SourcesResponse"] = None
     ) -> None:
         self.data = data
         self.sources = sources or None
@@ -93,9 +107,10 @@ class Response(Generic[ResponseTypes]):
             if isinstance(item, dict):
                 if item.get("tag") == "FrostSource":
                     # Cast the item to FrostSource and get the "id"
-                    source_item = cast(FrostSource, item)
-                    source_ids.append(source_item["id"].split(":")[0])
-                elif "sourceId" in item:
+                    if "id" in item and item["id"]:
+                        source_item = cast(FrostSource, item)
+                        source_ids.append(source_item["id"].split(":")[0])
+                elif "sourceId" in item and item["sourceId"]:
                     response_item = cast(
                         Union[
                             FrostRainfallIDFSource,

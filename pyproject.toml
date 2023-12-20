@@ -32,6 +32,7 @@ datamodel-code-generator = {extras = ["http"], version="^0.22.0"}
 
 [tool.isort]
 profile = "black"
+skip = "frost/models/__init__.py"
 
 [tool.mypy]
 # 3rd party import

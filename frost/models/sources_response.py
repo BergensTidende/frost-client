@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from typing import List
 
 import pandas as pd
+from frost.models.response import Response
 
-from frost.models import Response
 from frost.types import FrostSource
 
 
@@ -12,8 +14,16 @@ class SourcesResponse(Response):
     data: List[FrostSource]
 
     def __init__(self, data: List[FrostSource]) -> None:
-        self.data = data
-        self.date_colums = ["validFrom", "validTo"]
+        if isinstance(data, list):
+            self.data = data
+        elif data is None:
+            # Handling None as an empty list
+            self.data = []
+        else:
+            # If data is not a list, a single FrostSource, or None, raise an error
+            raise TypeError("Data must be a list of FrostSource instances")
+
+        self.date_columns = ["validFrom", "validTo"]
         self.compact_columns = [
             "id",
             "name",

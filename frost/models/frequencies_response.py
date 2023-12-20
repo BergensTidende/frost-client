@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List, Optional
 
 import pandas as pd
@@ -23,7 +25,7 @@ class FrequenciesResponse(Response):
         """
         self.data = data
         self.sources = sources
-        self.date_colums = ["validFrom", "validTo"]
+        self.date_columns = ["validFrom", "validTo"]
         self.compact_columns = [
             "sourceId",
             "version",

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from os import getenv
 from typing import List, Optional, Union, cast
 from urllib.parse import urljoin
@@ -5,14 +7,14 @@ from urllib.parse import urljoin
 import requests
 from dotenv import load_dotenv
 
-from .models import (
+from frost.models import (
     AvailableTimeSeriesResponse,
     FrequenciesResponse,
     FrequenciesSourcesResponse,
     ObservationsResponse,
     SourcesResponse,
 )
-from .types import (
+from frost.types import (
     FrostAvailableSourcesFrequenciesArgs,
     FrostAvailableTimeSeriesArgs,
     FrostDataTypes,
@@ -28,20 +30,18 @@ from .types import (
 )
 
 load_dotenv()
-FROST_API_KEY = getenv("FROST_API_KEY", None)
-
 
 class APIError(Exception):
     """Raised when the API responds with a 400 og 404"""
 
     code: str
     message: str
-    reason: str
+    reason: Optional[str]
 
     def __init__(self, e: FrostResponseError) -> None:
-        self.code = e["code"]
-        self.message = e["message"]
-        self.reason = e["reason"]
+        self.code = e["code"] if "code" in e else None
+        self.message = e["message"] if "message" in e else None
+        self.reason = e["reason"] if "reason" in e else None
 
 
 class Frost(object):
@@ -57,15 +57,18 @@ class Frost(object):
     >>>  frost = Frost(username="myapikey")
     """
 
-    def __init__(self, username: Optional[str] = None) -> None:
+    def __init__(
+        self, username: Optional[str] = None
+    ) -> None:
         """
         :param str username: your own frost.met.no username/key.
         """
         self.base_url = "https://frost.met.no/"
         self.api_version = "v0"
         self.session = requests.Session()
-        self.username = username or FROST_API_KEY
-        if not self.username:
+        self.username = username or getenv("FROST_API_KEY", None)
+
+        if self.username is None:
             raise ValueError(
                 """
                 You must provide a username parameter
@@ -116,7 +119,12 @@ class Frost(object):
         if "error" in json:
             raise APIError(json["error"])
         else:
-            raise APIError({"code": "no data", "message": "no data field in json"})
+            raise APIError(
+                {
+                    "code": "no data",
+                    "message": "no data field in json",
+                }
+            )
 
     def get_source_ids(self, result: Optional[List[FrostDataTypes]]) -> List[str]:
         """Get source IDs from a list of Frost API data types
@@ -208,7 +216,10 @@ class Frost(object):
             return SourcesResponse(data=filtered_res)
         else:
             raise APIError(
-                {"code": "invalid data", "message": "No valid FrostSource items found"}
+                {
+                    "code": "invalid data",
+                    "message": "No valid FrostSource items found",
+                }
             )
 
     def get_available_timeseries(
@@ -393,7 +404,7 @@ class Frost(object):
             not found.
         """
         args = cast(FrostAvailableSourcesFrequenciesArgs, kwargs)
-        res = self.make_request("frequencies", args)
+        res = self.make_request("frequencies/rainfall/availableSources", args)
 
         if res is None:
             raise APIError({"code": "no data", "message": "no data field in json"})
@@ -403,7 +414,10 @@ class Frost(object):
             return FrequenciesSourcesResponse(data=filtered_res)
         else:
             raise APIError(
-                {"code": "invalid data", "message": "No valid FrostSource items found"}
+                {
+                    "code": "invalid data",
+                    "message": "No valid FrostSource items found",
+                }
             )
 
     def get_frequencies(
@@ -443,7 +457,7 @@ class Frost(object):
 
         """
         args = cast(FrostFrequenciesArgs, kwargs)
-        res = self.make_request("frequencies", args)
+        res = self.make_request("frequencies/rainfall", args)
 
         sources = None
 

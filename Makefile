@@ -46,7 +46,7 @@ lint-flake8: ## flake8 (linter)
 
 .PHONY: lint-mypy
 lint-mypy: ## mypy (static-type checker)
-	@poetry run mypy --config-file pyproject.toml frost
+	@poetry run mypy --python-version 3.10 --config-file pyproject.toml frost
 
 .PHONY: lint-mypy-report
 lint-mypy-report: ## run mypy & create report

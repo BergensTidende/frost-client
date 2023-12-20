@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 from typing import List
 
 import pandas as pd
 
-from frost.models import Response
+from frost.models.response import Response
+
 from frost.types import FrostRainfallIDFSource
 
 
@@ -13,7 +16,7 @@ class FrequenciesSourcesResponse(Response):
 
     def __init__(self, data: List[FrostRainfallIDFSource]) -> None:
         self.data = data
-        self.date_colums = ["validFrom", "validTo"]
+        self.date_columns = ["validFrom", "validTo"]
         self.compact_columns = [
             "sourceId",
             "version",
