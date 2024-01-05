@@ -61,8 +61,8 @@ test: ## run tests
 ##@ Create models
 .PHONY: create-models
 create-models: ## create models from frost swagger
-	@poetry run datamodel-codegen --url https://frost.met.no/swagger.json --output frosttypes/types.py --input-file-type jsonschema --output-model-type typing.TypedDict
-	@poetry run python frosttypes/fix-types.py
+	@poetry run datamodel-codegen --url https://frost-beta.met.no/swaggerui/openapibasic.json --input-file-type json --output frost/api/models.py --target-python-version 3.10 --use-double-quotes
+	# @poetry run python frosttypes/fix-types.py
 
 ##@ Releases
 .PHONY: bump-patch

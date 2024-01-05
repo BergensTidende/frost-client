@@ -35,6 +35,16 @@ profile = "black"
 skip = "frost/models/__init__.py"
 
 [tool.mypy]
+plugins = [
+  "pydantic.mypy"
+]
+
+follow_imports = "silent"
+warn_redundant_casts = true
+warn_unused_ignores = true
+check_untyped_defs = true
+no_implicit_reexport = true
+
 # 3rd party import
 ignore_missing_imports = true
 # dynamic typing
@@ -58,6 +68,11 @@ warn_return_any = false
 warn_unreachable = true
 # Misc
 pretty = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
 
 [build-system]
 requires = ["poetry-core"]

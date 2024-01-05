@@ -106,3 +106,4 @@ notebooks/Notebook.ipynb
 
 frosttypes/types.py
 frosttypes/fixed-types.py
+tmp/*
