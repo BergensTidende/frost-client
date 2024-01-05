@@ -61,7 +61,7 @@ test: ## run tests
 ##@ Create models
 .PHONY: create-models
 create-models: ## create models from frost swagger
-	@poetry run datamodel-codegen --url https://frost-beta.met.no/swaggerui/openapibasic.json --input-file-type json --output frost/api/models.py --target-python-version 3.10 --use-double-quotes
+	@poetry run datamodel-codegen --url https://frost-beta.met.no/swaggerui/openapibasic.json --input-file-type json --output frost/api/models.py --target-python-version 3.10 --use-double-quotes --class-name: "FrostAPI" --snake-case-field
 	# @poetry run python frosttypes/fix-types.py
 
 ##@ Releases
