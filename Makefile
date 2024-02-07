@@ -58,11 +58,16 @@ lint: lint-black lint-isort lint-flake8 lint-mypy ## run all linters
 test: ## run tests
 	@poetry run pytest -v --cov=frost --cov-report=term-missing
 
+.PHONY: convert-swagger
+convert-swagger: ## convert swagger to json
+	curl -X 'GET' \
+  'https://converter.swagger.io/api/convert?url=https%3A%2F%2Ffrost-beta.met.no%2Fswaggerui%2Fopenapibasic.json' \
+  -H 'accept: application/json' -o data/frost-openapi.json
+
 ##@ Create models
 .PHONY: create-models
 create-models: ## create models from frost swagger
-	@poetry run datamodel-codegen --url https://frost-beta.met.no/swaggerui/openapibasic.json --input-file-type json --output frost/api/models.py --target-python-version 3.10 --use-double-quotes --class-name: "FrostAPI" --snake-case-field
-	# @poetry run python frosttypes/fix-types.py
+	@poetry run datamodel-codegen --input data/frost-openapi.json --input-file-type json --output frost/api/models.py --output-model-type pydantic_v2.BaseModel --target-python-version 3.10 --use-double-quotes --class-name FrostAPI --snake-case-field
 
 ##@ Releases
 .PHONY: bump-patch

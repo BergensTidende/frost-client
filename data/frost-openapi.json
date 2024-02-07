@@ -1,0 +1,435 @@
+{
+  "openapi": "3.0.2",
+  "info": {},
+  "servers": [{ "url": "/" }],
+  "security": [{ "basicAuth": [] }],
+  "tags": [
+    {
+      "name": "Observations",
+      "description": "<span style=\"background-color:#ffff00;font-weight:bold;font-size:200%\"> ((work in progress))</span>"
+    },
+    {
+      "name": "reports",
+      "description": "<span style=\"background-color:#ffff00;font-weight:bold;font-size:200%\"> ((work in progress))</span>"
+    }
+  ],
+  "paths": {
+    "/api/v1/lightning/get": {
+      "get": {
+        "tags": ["lightning"],
+        "summary": "Get lightning data form the Frost API",
+        "description": "Get lightning data from the MET Norway's data storage systems. The query parameters act as a filter; if all were left blank (not allowed in practice), one would retrieve all of the lightning data in the system. Restrict the data using the query parameters.\n",
+        "operationId": "lightningGet",
+        "parameters": [
+          {
+            "name": "referencetime",
+            "in": "query",
+            "description": "The time range to get observations for in either extended ISO-8601 format or the single word 'latest'.",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "string" },
+            "example": "2021-01-04T00:00:00Z/2021-01-14T00:00:00Z"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "string", "enum": ["ualf", "json"] },
+            "example": "ualf"
+          },
+          {
+            "name": "geometry",
+            "in": "query",
+            "description": "Get lightning within a polygon specified as POLYGON(...) using [WKT](https://en.wikipedia.org/wiki/Well-known_text_representation_of_geometry); see the reference section on the [Geometry Specification]() for documentation and examples.\n",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "string" },
+            "example": "POLYGON((10 59, 10 60, 11 60, 11 59, 10 59))"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lightning data successfully downloaded.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/lightning_get_OK" }
+              },
+              "text/ualf": {
+                "schema": { "$ref": "#/components/schemas/lightning_get_OK" }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameter value or malformed request.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/service_unavailable" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      }
+    },
+    "/api/v1/obs/met.no/filter/get": {
+      "get": {
+        "tags": ["Observations"],
+        "summary": "Get weather observations and/or metadata",
+        "description": "This form allows a [dataset of time series type 'filter'](/docs/dataset_met.no_filter) to be\ndownloaded from the Frost API\n\nTo make a valid request, you must specify the when, where and what of the observation data you want: you must set the time parameter, an element type parameter and at least one station or (geo)location type parameter. Matching is case-insensitive, and you can use asterisks (\\*) for wildcard matching.\n",
+        "operationId": "obsMetNoFilterGet",
+        "parameters": [
+          {
+            "name": "incobs",
+            "in": "query",
+            "description": "If you want to get weather observations set to True.\nIf you only want information about the observations (metadata) set to False (default value).\n",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "boolean", "default": false }
+          },
+          {
+            "name": "time",
+            "in": "query",
+            "description": "A [time specification](/docs/parameters#time) to select relevant observation times.\nEither a time range formated as \"2020-01-01T00:00:00Z/2020-01-02T23:59:59Z\", or the keyword\nlatest can be used. By default if you use latest the maximum age of observations will be 3 hours,\nand only 1 latest observation will be returned.\n",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "string" },
+            "example": "latest"
+          },
+          {
+            "name": "elementids",
+            "in": "query",
+            "description": "A comma-separated list of [weather parameters](/docs/parameters#elementids). Use asterisk (\\*) for wildcard matching. __Example__: wind*,air_temperature\n",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "description": "The country, county, municipality or place name of the weather observations. Use asterisk (\\*) for wildcard matching. __Example__: *stad,oslo\n",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "stationids",
+            "in": "query",
+            "description": "A comma-separated list of internal MET Norway weather [station ID](/docs/parameters#stationids) numbers. Use asterisk (\\*) for wildcard matching. __Example__: 18700,55*\n",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "nearest",
+            "in": "query",
+            "description": "A [geographic search](/docs/parameters#nearest) parameter to look for weather observations around a geographic point.\n__Example__: {\"maxdist\":7.5,\"maxcount\":3,\"points\":[{\"lon\":10.72,\"lat\":59.94}]}\n",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "polygon",
+            "in": "query",
+            "description": "A [geographic search](/docs/parameters#polygon) parameter to look for weather observations inside a geographic area (specifically a polygon).\n__Example__: [{\"lat\":59.93,\"lon\":10.05},{\"lat\":59.93,\"lon\":11},{\"lat\":60.25,\"lon\":10.77}]\n",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "503": {
+            "description": "The service can not properly handle the request at this time.\n",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/service_unavailable" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      }
+    },
+    "/api/v1/obs/met.no/filter/put": {},
+    "/api/v1/obs/met.no/filter/status": {},
+    "/api/v1/obs/met.no/filter/ts/create": {},
+    "/api/v1/obs/met.no/filter/ts/delete": {},
+    "/api/v1/obs/met.no/filter/ts/update": {},
+    "/api/v1/obs/met.no/kvkafka/get": {},
+    "/api/v1/obs/met.no/kvkafka/put": {},
+    "/api/v1/obs/met.no/kvkafka/status": {},
+    "/api/v1/obs/met.no/kvkafka/ts/create": {},
+    "/api/v1/obs/met.no/kvkafka/ts/delete": {},
+    "/api/v1/obs/met.no/kvkafka/ts/update": {},
+    "/api/v1/reports/available/get": {
+      "get": {
+        "tags": ["reports"],
+        "summary": "Show available values for report settings",
+        "description": "This method shows available values for settings for reports that can be generated by\nthe Frost service.\n",
+        "operationId": "reportsAvailableGet",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "The report type. If the type is omitted, information for all available report types\nis shown.\n",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "string" },
+            "example": "windrose"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Available values for settings for the specified report type(s) were successfully generated\nand downloaded.\n",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/reports_get_OK" }
+              }
+            }
+          },
+          "503": {
+            "description": "The service can not properly handle the request at this time.\n",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/service_unavailable" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      }
+    },
+    "/api/v1/reports/get": {
+      "get": {
+        "tags": ["reports"],
+        "summary": "Generate a report",
+        "description": "This method allows a report to be generated and downloaded from the Frost service.\n",
+        "operationId": "reportsGet",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "description": "The report type.\n",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "string" },
+            "example": "windrose"
+          },
+          {
+            "name": "settings",
+            "in": "query",
+            "description": "The serialized JSON object that contains the specification of a report of this type.\n",
+            "required": true,
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "string" },
+            "example": "{... TO BE DOCUMENTED ...}"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report was successfully generated and downloaded.",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/reports_get_OK" }
+              }
+            }
+          },
+          "503": {
+            "description": "The service can not properly handle the request at this time.\n",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/service_unavailable" }
+              }
+            }
+          }
+        },
+        "security": [{ "basicAuth": [] }]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "about_OK": {
+        "title": "Info (to be filled in) ...",
+        "type": "object",
+        "properties": {
+          "description": { "type": "string" },
+          "name": { "type": "string" },
+          "provider": {
+            "type": "object",
+            "properties": {
+              "@type": { "type": "string" },
+              "name": { "type": "string" }
+            }
+          },
+          "termsOfService": { "type": "string" }
+        }
+      },
+      "healthz": {
+        "title": "Service health report.",
+        "required": ["status"],
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string",
+            "example": "Checked stock of greetings and we are good."
+          },
+          "errors": { "type": "array", "items": { "type": "string" } },
+          "status": {
+            "type": "string",
+            "example": "healthy",
+            "enum": ["healthy", "unhealthy", "critical"]
+          }
+        }
+      },
+      "lightning_get_OK": {
+        "title": "Lightning successfully downloaded.",
+        "type": "object",
+        "properties": {}
+      },
+      "obs_met.no_filter_get_OK": {
+        "title": "Observations from time series of type 'met.no/filter' successfully downloaded.",
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "tstype": {
+                "type": "string",
+                "description": "Time series type. In this case the value should always be 'met.no/filter'.",
+                "example": "met.no/filter"
+              }
+            },
+            "description": "The output dataset supported by the 'met.no/filter' time series type. Also documented [here](/docs/dataset_met.no_filter). TO BE DOCUMENTED!"
+          }
+        }
+      },
+      "obs_met.no_filter_status_OK": {
+        "title": "Status relevant for time series type 'met.no/filter' successfully downloaded.",
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "object",
+            "description": "Internal status relevant for the 'met.no/filter' time series type. (TO BE DOCUMENTED)"
+          }
+        }
+      },
+      "obs_met.no_kvkafka_get_OK": {
+        "title": "Observations from time series of type 'met.no/kvkafka' successfully downloaded.",
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "tstype": {
+                "type": "string",
+                "description": "Time series type. In this case the value should always be 'met.no/kvkafka'.",
+                "example": "met.no/kvkafka"
+              }
+            },
+            "description": "The output dataset supported by the 'met.no/kvkafka' time series type. Also documented [here](/docs/dataset_met.no_kvkafka). TO BE DOCUMENTED!"
+          }
+        }
+      },
+      "obs_met.no_kvkafka_status_OK": {
+        "title": "Status relevant for time series type 'met.no/kvkafka' successfully downloaded.",
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "object",
+            "description": "Internal status relevant for the 'met.no/kvkafka' time series type. (TO BE DOCUMENTED)"
+          }
+        }
+      },
+      "obs_put_OK": {
+        "title": "Observations successfully uploaded.",
+        "required": ["status", "storagebackend"],
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "integer",
+            "description": "number of observations successfully deleted",
+            "example": 123
+          },
+          "inserted": {
+            "type": "integer",
+            "description": "number of observations successfully inserted",
+            "example": 123
+          },
+          "status": { "type": "string", "example": "success" },
+          "storagebackend": {
+            "type": "string",
+            "example": "local in-memory structure"
+          },
+          "updated": {
+            "type": "integer",
+            "description": "number of observations successfully updated",
+            "example": 123
+          }
+        }
+      },
+      "obs_ts_create_OK": {
+        "title": "Time series successfully created.",
+        "required": ["status", "storagebackend"],
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "success" },
+          "storagebackend": {
+            "type": "string",
+            "example": "local in-memory structure"
+          }
+        }
+      },
+      "obs_ts_delete_OK": {
+        "title": "Time series successfully deleted.",
+        "required": ["status", "storagebackend"],
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "success" },
+          "storagebackend": {
+            "type": "string",
+            "example": "local in-memory structure"
+          }
+        }
+      },
+      "obs_ts_update_OK": {
+        "title": "Time series successfully updated.",
+        "required": ["status", "storagebackend"],
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "example": "success" },
+          "storagebackend": {
+            "type": "string",
+            "example": "local in-memory structure"
+          }
+        }
+      },
+      "reports_available_get_OK": {
+        "title": "Available report settings successfully downloaded.",
+        "type": "object",
+        "properties": {}
+      },
+      "reports_get_OK": {
+        "title": "Report successfully downloaded.",
+        "type": "object",
+        "properties": {}
+      },
+      "service_unavailable": {},
+      "time_series_not_found": {}
+    },
+    "securitySchemes": { "basicAuth": { "type": "http", "scheme": "basic" } }
+  }
+}

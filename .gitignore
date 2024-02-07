@@ -107,3 +107,7 @@ notebooks/Notebook.ipynb
 frosttypes/types.py
 frosttypes/fixed-types.py
 tmp/*
+frost-client.code-workspace
+observations.json
+observations.csv
+.DS_Store
