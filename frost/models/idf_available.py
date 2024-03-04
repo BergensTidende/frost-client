@@ -4,19 +4,19 @@ from typing import Any, List
 
 import pandas as pd
 
-from frost.api.general import FrostApiResponse
+from frost.api import IdfAvailableResponse
 from frost.models import ApiBase
 from frost.utils.dataframes import safe_parse_date
 
 # from frost.types import FrostObservationsResponse
 
 
-class Lightning(ApiBase):
-    data: FrostApiResponse
+class IdfAvailable(ApiBase):
+    data: IdfAvailableResponse
 
     def __init__(
         self,
-        data: FrostApiResponse,
+        data: IdfAvailableResponse,
     ) -> None:
         """
         Initialize a response class

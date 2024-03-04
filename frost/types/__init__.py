@@ -20,13 +20,13 @@ class Element(BaseModel):
 
 
 class Value(BaseModel):
-    elevation_masl_hs_: str = Field(..., alias='elevation(masl/hs)')
+    elevation_masl_hs_: str = Field(..., alias="elevation(masl/hs)")
     latitude: str
     longitude: str
 
 
 class LocationItem(BaseModel):
-    from_: str = Field(..., alias='from')
+    from_: str = Field(..., alias="from")
     to: str
     value: Value
 
@@ -46,13 +46,13 @@ class Geometry(BaseModel):
 
 
 class ExposureItem(BaseModel):
-    from_: str = Field(..., alias='from')
+    from_: str = Field(..., alias="from")
     to: str
     value: str
 
 
 class PerformanceItem(BaseModel):
-    from_: str = Field(..., alias='from')
+    from_: str = Field(..., alias="from")
     to: str
     value: str
 
@@ -76,7 +76,7 @@ class Extra(BaseModel):
 
 
 class Available(BaseModel):
-    from_: str = Field(..., alias='from')
+    from_: str = Field(..., alias="from")
 
 
 class Header(BaseModel):

@@ -11,7 +11,7 @@ from frost.utils.dataframes import safe_parse_date
 # from frost.types import FrostObservationsResponse
 
 
-class Lightning(ApiBase):
+class Idf(ApiBase):
     data: FrostApiResponse
 
     def __init__(

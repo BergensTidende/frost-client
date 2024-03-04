@@ -18,14 +18,13 @@ import pandas as pd
 
 from frost.utils.dataframes import convert_date_columns, create_station_id_column
 
-class ApiResponse():
+
+class ApiBase:
     data: Any
     date_columns: List[str]
     compact_columns: List[str]
 
-    def __init__(
-        self, data
-    ) -> None:
+    def __init__(self, data) -> None:
         self.data = data
 
     def to_str(self) -> str:

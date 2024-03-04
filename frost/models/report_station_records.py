@@ -11,7 +11,7 @@ from frost.utils.dataframes import safe_parse_date
 # from frost.types import FrostObservationsResponse
 
 
-class Lightning(ApiBase):
+class ReportStationRecords(ApiBase):
     data: FrostApiResponse
 
     def __init__(
@@ -27,15 +27,7 @@ class Lightning(ApiBase):
         """
         self.data = data
         self.date_columns = ["Epoch"]
-        self.compact_columns = [
-            "stationId",
-            "sourceId",
-            "validFrom",
-            "timeOffset",
-            "timeResolution",
-            "elementId",
-            "unit",
-        ]
+        self.compact_columns = []
 
     def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
         """Normalizes the JSON data into a dataframe. This method must be implemented
@@ -58,8 +50,4 @@ class Lightning(ApiBase):
 
     def to_list(self) -> List[Any]:
         """Returns the sources as a Python list of dicts"""
-        return self.data
-
-    def get_ualf(self) -> str:
-        """Returns data as text"""
         return self.data

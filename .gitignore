@@ -111,3 +111,5 @@ frost-client.code-workspace
 observations.json
 observations.csv
 .DS_Store
+frost/api/general-models-tmp.py
+frost/api/reports-available-tmp.py

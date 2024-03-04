@@ -1,23 +1,22 @@
 from __future__ import annotations
 
-from typing import List, Optional, Any
+from typing import Any, List
 
 import pandas as pd
-import json
 
-from frost.models import ApiResponse
-from frost.api.models import FrostApiResponse
+from frost.api.general import FrostApiResponse
+from frost.models import ApiBase
 from frost.utils.dataframes import safe_parse_date
 
 # from frost.types import FrostObservationsResponse
 
 
-class ObservationsResponse(ApiResponse):
-    data: Any
+class Observations(ApiBase):
+    data: FrostApiResponse
 
     def __init__(
         self,
-        data: Any,
+        data: FrostApiResponse,
     ) -> None:
         """
         Initialize a response class

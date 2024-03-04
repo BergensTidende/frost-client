@@ -1,10 +1,13 @@
-from pydantic import BaseModel, validator, model_validator, Field
-from typing import Optional, List
-import re
 import json
+import re
+from typing import List, Optional
+
+from pydantic import BaseModel, Field, model_validator, validator
+
+from frost.utils.validation import validate_nearest
 
 
-class ObsMetNoFilterParams(BaseModel):
+class ObservationsRequest(BaseModel):
     incobs: bool = False
     time: str = "latest"
     elementids: str | None = None
@@ -34,35 +37,10 @@ class ObsMetNoFilterParams(BaseModel):
             )
         return v
 
-        return True
-
     @validator("nearest")
     def validate_nearest(cls, v):
-        try:
-            nearest_data = json.loads(v)
-            if not isinstance(nearest_data, dict):
-                raise ValueError("Nearest must be a JSON object")
-
-            # Validate the structure of 'nearest'
-            required_keys = {"maxdist", "maxcount", "points"}
-            if not required_keys.issubset(nearest_data):
-                raise ValueError(
-                    f"Missing keys in nearest; required keys are: {required_keys}"
-                )
-
-            # Validate 'points'
-            if not all(
-                isinstance(point, dict) and "lon" in point and "lat" in point
-                for point in nearest_data["points"]
-            ):
-                raise ValueError(
-                    "Each point in nearest must be a dictionary with 'lon' and 'lat' keys"
-                )
-
-        except json.JSONDecodeError:
-            raise ValueError("Nearest must be valid JSON")
-
-        return v
+        if validate_nearest(v):
+            return v
 
     @validator("polygon")
     def validate_polygon(cls, v):
@@ -86,16 +64,11 @@ class ObsMetNoFilterParams(BaseModel):
         return v
 
 
-class Value(BaseModel):
-    elevation: str = Field(..., alias="elevation(masl/hs)")
-    latitude: str
-    longitude: str
-
-
-class Location(BaseModel):
-    from_: str = Field(..., alias="from")
-    to: str
-    value: Value
+class Id(BaseModel):
+    level: int
+    parameterid: int
+    sensor: int
+    stationid: int
 
 
 class Element(BaseModel):
@@ -105,27 +78,54 @@ class Element(BaseModel):
     unit: str
 
 
-class GeometryLevel(BaseModel):
+class Value(BaseModel):
+    elevation_masl_hs_: str = Field(..., alias="elevation(masl/hs)")
+    latitude: str
+    longitude: str
+
+
+class LocationItem(BaseModel):
+    from_: str = Field(..., alias="from")
+    to: str
+    value: Value
+
+
+class Station(BaseModel):
+    location: List[LocationItem]
+    shortname: str
+
+
+class Level(BaseModel):
     unit: str
     value: str
 
 
-class QualityValue(BaseModel):
+class Geometry(BaseModel):
+    level: Level
+
+
+class ExposureItem(BaseModel):
     from_: str = Field(..., alias="from")
     to: str
     value: str
 
 
+class PerformanceItem(BaseModel):
+    from_: str = Field(..., alias="from")
+    to: str
+    value: str
+
+
+class Quality(BaseModel):
+    exposure: List[ExposureItem]
+    performance: List[PerformanceItem]
+
+
 class Timeseries(BaseModel):
-    geometry: GeometryLevel
-    quality: dict
+    geometry: Geometry
+    quality: Quality
     timeoffset: str
     timeresolution: str
-
-
-class Station(BaseModel):
-    location: List[Location]
-    shortname: str
 
 
 class Extra(BaseModel):
@@ -134,26 +134,35 @@ class Extra(BaseModel):
     timeseries: Timeseries
 
 
-class Id(BaseModel):
-    level: int
-    parameterid: int
-    sensor: int
-    stationid: int
+class Available(BaseModel):
+    from_: str = Field(..., alias="from")
 
 
 class Header(BaseModel):
     id: Id
     extra: Extra
-    available: dict
+    available: Available
 
 
-class TSeries(BaseModel):
+class Body(BaseModel):
+    qualitycode: str
+    value: str
+
+
+class Observation(BaseModel):
+    time: str
+    body: Body
+
+
+class Tsery(BaseModel):
     header: Header
-    observations: Optional[
-        str
-    ]  # Assuming observations can have a different structure or be null
+    observations: List[Observation]
 
 
-class FrostApiResponse(BaseModel):
+class Data(BaseModel):
     tstype: str
-    tseries: List[TSeries]
+    tseries: List[Tsery]
+
+
+class ObservationsResponse(BaseModel):
+    data: Data
