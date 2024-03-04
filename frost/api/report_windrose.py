@@ -8,31 +8,25 @@ from .reports import ScaleType, ReportResponse
 
 
 class ReportWindroseRequest(BaseModel):
-    StationID: str
-    FromTime: str
-    ToTime: str
-    Months: Optional[List[int]] = None
-    MaxWindSpeed: Optional[int] = None
-    Scale: Optional[ScaleType] = None
+    station_id: str = Field(..., alias="StationID")
+    from_time: str = Field(..., alias="FromTime")
+    to_time: str = Field(..., alias="ToTime")
+    months: Optional[List[int]] = Field(None, alias="Months")
+    max_wind_speed: Optional[int] = Field(None, alias="MaxWindSpeed")
+    scale: Optional[ScaleType] = Field(None, alias="Scale")
 
-    @model_validator(mode="before")
-    def check_required_fields(cls, values):
-        if (
-            values.get("StationID")
-            == None & values.get("FromTime")
-            == None & values.get("ToTime")
-            == None
-        ):
-            raise ValueError("Both StationID, FromTime and ToTime must be provided")
-        return values
+    class Config:
+        allow_population_by_field_name = True
 
-    @validator("FromTime")
-    def check_valid_from_time(cls, values):
-        return validate_time(values, "FromTime")
+    @validator("station_id", "from_time", "to_time", pre=True, each_item=False)
+    def check_required_fields(cls, value, field):
+        if value is None:
+            raise ValueError(f"{field.name} must be provided")
+        return value
 
-    @validator("ToTime")
-    def check_valid_to_time(cls, values):
-        return validate_time(values, "ToTime")
+    @validator("from_time", "to_time")
+    def check_valid_from_time(cls, value, field):
+        return validate_time(value, field.name)
 
 
 class Title(BaseModel):
@@ -148,6 +142,7 @@ class Table(BaseModel):
 
 class SumsTitlesItems(BaseModel):
     type: str
+
 
 class VerticalAxisProperties(BaseModel):
     name: Name

@@ -1,24 +1,23 @@
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, model_validator, validator
+from pydantic import BaseModel, RootModel, validator
 
 from frost.utils.validation import validate_time_range, validate_wkt
 
-class FormatType(str, Enum):
-    json = "json"
-    ualf = "ualf"
+from .reports import FormatType
+
 
 class LightningRequest(BaseModel):
     referencetime: str
     format: FormatType
     geometry: Optional[str] = None
 
-    @model_validator(mode="before")
-    def check_required_fields(cls, values):
-        if values.get("referencetime") == None & values.get("format") == None:
-            raise ValueError("Both referencetime and format must be provided")
-        return values
+    @validator("referencetime", "format", pre=True, each_item=False)
+    def check_required_fields(cls, value, field):
+        if value is None:
+            raise ValueError(f"{field.name} must be provided")
+        return value
 
     @validator("referencetime")
     def check_referencetime(cls, values):
@@ -55,5 +54,5 @@ class LightningItem(BaseModel):
     TimingIndicator: int
 
 
-class LightningResponse(BaseModel):
-    __root__: List[LightningItem]
+class LightningResponse(RootModel):
+    root: List[LightningItem]

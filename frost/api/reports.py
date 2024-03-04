@@ -9,6 +9,10 @@ class ScaleType(str, Enum):
     beaufort = 'beaufort'
     meters_per_second = 'm/s'
 
+class FormatType(str, Enum):
+    json = "json"
+    ualf = "ualf"
+
 class ReportRequest(BaseModel):
     type: str
     settings: dict

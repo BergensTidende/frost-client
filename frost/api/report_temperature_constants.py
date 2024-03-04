@@ -1,5 +1,5 @@
-from pydantic import BaseModel, model_validator, List, Field
-
+from pydantic import BaseModel, model_validator, Field
+from typing import List
 from .reports import ReportResponse
 
 
@@ -11,6 +11,7 @@ class ReportTemperatureConstantsRequest(BaseModel):
         if values.get("StationID") == None:
             raise ValueError("StationID must be provided")
         return values
+
 
 class Field1(BaseModel):
     type: str
@@ -58,6 +59,7 @@ class Field11(BaseModel):
 
 class Field12(BaseModel):
     type: str
+
 
 class FromTime(BaseModel):
     type: str

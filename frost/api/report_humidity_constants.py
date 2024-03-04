@@ -1,5 +1,5 @@
-from pydantic import BaseModel, model_validator, List, Field
-
+from pydantic import BaseModel, model_validator, Field
+from typing import List
 from .reports import ReportResponse
 
 

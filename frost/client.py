@@ -247,7 +247,7 @@ class Frost(object):
 
         try:
             # Validate the arguments
-            params = ObservationsRequest(parameters)
+            params = ObservationsRequest(**parameters)
         except ValidationError as e:
             # Handle the validation error
             raise APIError(
@@ -417,7 +417,7 @@ class Frost(object):
         data = self.make_request("reports", parameters)
         return data
 
-    def get_report_idf(self, stationId: str, unit: str) -> Any:
+    def get_report_idf(self, stationId: str, unit: str) -> ReportIdf:
         """Get IDF reports from the Frost API
 
         :param str settings: The serialized JSON object that contains the
@@ -437,9 +437,9 @@ class Frost(object):
         stationId: str,
         fromTime: str,
         toTime: str,
-        maxWindSpeed: Optional[int],
-        months: Optional[List[int]],
-        scale: Optional[ScaleType],
+        maxWindSpeed: Optional[int] = None,
+        months: Optional[List[int]] = None,
+        scale: Optional[ScaleType] = None,
     ) -> ReportWindrose:
         """Get windrose reports from the Frost API
 
@@ -462,9 +462,10 @@ class Frost(object):
         if scale != None:
             parameters["Scale"] = scale
 
+        print (parameters)
         try:
             # Validate the arguments
-            params = ReportWindroseRequest(parameters)
+            params = ReportWindroseRequest(**parameters)
         except ValidationError as e:
             # Handle the validation error
             raise APIError(

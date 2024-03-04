@@ -10,20 +10,20 @@ from frost.utils.validation import validate_nearest
 class ObservationsRequest(BaseModel):
     incobs: bool = False
     time: str = "latest"
-    elementids: str | None = None
+    element_ids: str | None = Field(None, alias="elementids")
     location: str | None = None
-    stationids: str | None = None
+    station_ids: str | None = Field(None, alias="stationids")
     nearest: str | None = None
     polygon: str | None = None
 
-    @model_validator(mode="before")
-    def check_at_least_one_field(cls, values):
-        fields = ["elementids", "location", "stationids", "nearest", "polygon"]
-        if not any(values.get(field) is not None for field in fields):
-            raise ValueError(
-                "At least one of elementids, location, stationids, nearest, polygon must be provided"
-            )
-        return values
+    class Config:
+        allow_population_by_field_name = True
+
+    @validator("incobs", "time", pre=True, each_item=False)
+    def check_required_fields(cls, value, field):
+        if value is None:
+            raise ValueError(f"{field.name} must be provided")
+        return value
 
     @validator("time")
     def time_must_be_valid(cls, v):
