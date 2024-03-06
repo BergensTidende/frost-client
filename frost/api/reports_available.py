@@ -9,12 +9,8 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
-class SourceId(BaseModel):
-    type: str
-
-
 class Properties(BaseModel):
-    source_id: SourceId = Field(..., alias="SourceID")
+    source_id: str = Field(..., alias="SourceID")
 
 
 class InputSchema(BaseModel):
@@ -880,7 +876,7 @@ class WindRose(BaseModel):
     output_schema: OutputSchema6 = Field(..., alias="outputSchema")
 
 
-class Data(BaseModel):
+class ReportsAvailableResponse(BaseModel):
     dut: Optional[Dut] = Field(..., alias="DUT")
     humidity_constants: Optional[HumidityConstants] = Field(
         ..., alias="HumidityConstants"
@@ -892,10 +888,6 @@ class Data(BaseModel):
         ..., alias="TemperatureConstants"
     )
     wind_rose: Optional[WindRose] = Field(..., alias="WindRose")
-
-
-class ReportsAvailableResponse(BaseModel):
-    data: Data
 
 
 class ReportsAvailableRequest(BaseModel):

@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, RootModel, validator
+from pydantic import BaseModel, Field, RootModel, field_validator
 
 from frost.utils.validation import validate_time_range, validate_wkt
 
@@ -9,27 +9,30 @@ from .reports import FormatType
 
 
 class LightningRequest(BaseModel):
-    referencetime: str
+    reference_time: str = Field(..., alias="referencetime")
     format: FormatType
     geometry: Optional[str] = None
 
-    @validator("referencetime", "format", pre=True, each_item=False)
-    def check_required_fields(cls, value, field):
+    @field_validator("referencetime", "format")
+    @classmethod
+    def check_required_fields(cls, value, info):
         if value is None:
-            raise ValueError(f"{field.name} must be provided")
+            raise ValueError(f"{info.field_name} must be provided")
         return value
 
-    @validator("referencetime")
-    def check_referencetime(cls, values):
-        return validate_time_range(values, "referencetime", "latest")
+    @field_validator("referencetime")
+    @classmethod
+    def check_referencetime(cls, values, info):
+        return validate_time_range(values, info.field_name, "latest")
 
-    @validator("geometry")
-    def check_geoemtry(cls, values):
+    @field_validator("geometry")
+    @classmethod
+    def check_geoemtry(cls, values, info):
         if values != None:
             if validate_wkt(values):
                 return values
             else:
-                raise ValueError("geometry must be a WKT-string")
+                raise ValueError(f"{info.field_name} must be a WKT-string")
 
         return values
 

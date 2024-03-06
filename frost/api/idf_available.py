@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, model_validator, validator
+from pydantic import BaseModel, field_validator
 
 from frost.utils.validation import validate_time, validate_time_range, validate_wkt
 
@@ -9,8 +9,9 @@ from frost.utils.validation import validate_time, validate_time_range, validate_
 class IdfAvailableRequest(BaseModel):
     sources: str
 
-    @validator("sources")
-    def sources_must_be_valid(cls, v):
+    @field_validator("sources")
+    @classmethod
+    def sources_must_be_valid(cls, v, info):
         if v == "grid":
             return v
 
@@ -20,7 +21,7 @@ class IdfAvailableRequest(BaseModel):
         # Check if the input is a list of integers
         if not all(station_id.isdigit() for station_id in station_ids):
             raise ValueError(
-                """sources must be 'grid' or a comma-separated
+                """"sources must be 'grid' or a comma-separated
                 list of staion IDs (integers)"""
             )
 

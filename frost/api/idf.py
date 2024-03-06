@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import List
 
-from pydantic import BaseModel, model_validator, validator
+from pydantic import BaseModel, field_validator
 
-from frost.utils.validation import validate_time_range, validate_wkt
+from frost.utils.validation import validate_wkt
 
 
 class IdfRequest(BaseModel):
@@ -14,7 +14,8 @@ class IdfRequest(BaseModel):
     frequencies: str
     unit: str
 
-    @validator("sources")
+    @field_validator("sources")
+    @classmethod
     def sources_must_be_valid(cls, v):
         if v == "grid":
             return v
@@ -31,7 +32,8 @@ class IdfRequest(BaseModel):
 
         return v
 
-    @validator("location")
+    @field_validator("location")
+    @classmethod
     def location_must_be_valid(cls, v):
         if validate_wkt(v):
             return v
@@ -40,7 +42,8 @@ class IdfRequest(BaseModel):
                 "Location must be format POINT(<longitude degrees> <latitude degrees>)."
             )
 
-    @validator("durations")
+    @field_validator("durations")
+    @classmethod
     def validate_durations(cls, v):
         # Check if the input is a single or list of integers
         if v == "" | v == None:
@@ -51,7 +54,8 @@ class IdfRequest(BaseModel):
 
         return v
 
-    @validator("frequencies")
+    @field_validator("frequencies")
+    @classmethod
     def validate_frequencies(cls, v):
         if v == "" | v == None:
             return v
@@ -62,7 +66,8 @@ class IdfRequest(BaseModel):
 
         return v
 
-    @validator("unit")
+    @field_validator("unit")
+    @classmethod
     def validate_unit(cls, v):
         if v == "" | v == None:
             return v

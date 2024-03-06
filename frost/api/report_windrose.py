@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, model_validator, validator, Field
+from pydantic import BaseModel, field_validator, Field
 
 from frost.utils.validation import validate_time
 
@@ -8,7 +8,7 @@ from .reports import ScaleType, ReportResponse
 
 
 class ReportWindroseRequest(BaseModel):
-    station_id: str = Field(..., alias="StationID")
+    station_id: int = Field(..., alias="StationID")
     from_time: str = Field(..., alias="FromTime")
     to_time: str = Field(..., alias="ToTime")
     months: Optional[List[int]] = Field(None, alias="Months")
@@ -16,159 +16,46 @@ class ReportWindroseRequest(BaseModel):
     scale: Optional[ScaleType] = Field(None, alias="Scale")
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
-    @validator("station_id", "from_time", "to_time", pre=True, each_item=False)
-    def check_required_fields(cls, value, field):
+    @field_validator("station_id", "from_time", "to_time")
+    @classmethod
+    def check_required_fields(cls, value):
         if value is None:
-            raise ValueError(f"{field.name} must be provided")
+            raise ValueError(
+                "All of station_id, from_time and to_time must be provided"
+            )
         return value
 
-    @validator("from_time", "to_time")
-    def check_valid_from_time(cls, value, field):
-        return validate_time(value, field.name)
-
-
-class Title(BaseModel):
-    type: str
-
-
-class Value(BaseModel):
-    type: str
-
-
-class ExtrasItemsProperties(BaseModel):
-    title: Title
-    value: Value
-
-
-class ExtrasItems(BaseModel):
-    properties: ExtrasItemsProperties
-    required: List[str]
-    type: str
+    @field_validator("from_time", "to_time")
+    @classmethod
+    def check_valid_from_time(cls, value, info):
+        return validate_time(value, info.field_name)
 
 
 class Extras(BaseModel):
-    items: ExtrasItems
-    type: str
-
-
-class Name(BaseModel):
-    type: str
-
-
-class TypeItems(BaseModel):
-    type: str
-
-
-class Sums(BaseModel):
-    items: TypeItems
-    type: str
-
-
-class Titles(BaseModel):
-    items: TypeItems
-    type: str
-
-
-class HorizontalAxisProperties(BaseModel):
-    name: Name
-    sums: Sums
-    titles: Titles
-
-
-class HorizontalAxis(BaseModel):
-    properties: HorizontalAxisProperties
-    required: List[str]
-    type: str
-
-
-class AutomaticData(BaseModel):
-    items: TypeItems
-    type: str
-
-
-class FromTime(BaseModel):
-    type: str
-
-
-class ManualData(BaseModel):
-    items: TypeItems
-    type: str
-
-
-class Months(BaseModel):
-    items: TypeItems
-    type: str
-
-
-class NumberOfValues(BaseModel):
-    type: str
-
-
-class StationId(BaseModel):
-    type: str
-
-
-class ToTime(BaseModel):
-    type: str
-
-
-class MetadataProperties(BaseModel):
-    automatic_data: AutomaticData = Field(..., alias="automaticData")
-    from_time: FromTime = Field(..., alias="fromTime")
-    manual_data: ManualData = Field(..., alias="manualData")
-    months: Months
-    number_of_values: NumberOfValues = Field(..., alias="numberOfValues")
-    station_id: StationId = Field(..., alias="stationID")
-    to_time: ToTime = Field(..., alias="toTime")
-
+    title: str
+    value: float
 
 class Metadata(BaseModel):
-    properties: MetadataProperties
-    required: List[str]
-    type: str
+    automatic_data: Optional[List[str]] = Field(..., alias="automaticData")
+    from_time: str = Field(..., alias="fromTime")
+    manual_data: Optional[List[str]] = Field(..., alias="manualData")
+    months: Optional[List[str]]
+    number_of_values: int = Field(..., alias="numberOfValues")
+    station_id: str = Field(..., alias="stationID")
+    to_time: str = Field(..., alias="toTime")
 
 
-class TableItems(BaseModel):
-    items: TypeItems
-    type: str
+class Axis(BaseModel):
+    name: str
+    sums: List[float]
+    titles: List[str]
 
 
-class Table(BaseModel):
-    items: TableItems
-    type: str
-
-
-class SumsTitlesItems(BaseModel):
-    type: str
-
-
-class VerticalAxisProperties(BaseModel):
-    name: Name
-    sums: Sums
-    titles: Titles
-
-
-class VerticalAxis(BaseModel):
-    properties: VerticalAxisProperties
-    required: List[str]
-    type: str
-
-
-class Properties(BaseModel):
-    extras: Extras
-    horizontal_axis: HorizontalAxis = Field(..., alias="horizontalAxis")
+class ReportWindroseResponse(BaseModel):
+    extras: List[Extras]
+    horizontal_axis: Axis = Field(..., alias="horizontalAxis")
     metadata: Metadata
-    table: Table
-    vertical_axis: VerticalAxis = Field(..., alias="verticalAxis")
-
-
-class WindRose(BaseModel):
-    properties: Properties
-    required: List[str]
-    type: str
-
-
-class ReportWindroseResponse(ReportResponse[WindRose]):
-    pass
+    table: List[List[float]]
+    vertical_axis: Axis = Field(..., alias="verticalAxis")

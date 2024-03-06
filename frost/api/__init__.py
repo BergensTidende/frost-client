@@ -6,7 +6,9 @@ from .idf_available import IdfAvailableRequest, IdfAvailableResponse  # noqa: F4
 from .lightning import LightningRequest, LightningResponse  # noqa: F401
 from .observations import ObservationsRequest, ObservationsResponse  # noqa: F401
 from .reports import (  # noqa: F401
+    FormatType,
     ReportRequest,
+    ReportResponse,
     ScaleType,
 )
 from .report_dut import ReportDutRequest, ReportDutResponse  # noqa: F401

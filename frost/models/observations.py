@@ -4,7 +4,7 @@ from typing import Any, List
 
 import pandas as pd
 
-from frost.api.general import FrostApiResponse
+from frost.api import ObservationsResponse
 from frost.models import ApiBase
 from frost.utils.dataframes import safe_parse_date
 
@@ -12,11 +12,11 @@ from frost.utils.dataframes import safe_parse_date
 
 
 class Observations(ApiBase):
-    data: FrostApiResponse
+    data: ObservationsResponse
 
     def __init__(
         self,
-        data: FrostApiResponse,
+        data: ObservationsResponse,
     ) -> None:
         """
         Initialize a response class
@@ -43,7 +43,8 @@ class Observations(ApiBase):
 
         :return pd.DataFrame: the dataframe after normalization
         """
-        tseries = self.data["tseries"]
+        data = self.data.dict()
+        tseries = data.get("tseries", None)
         if not tseries:
             return pd.DataFrame()
 
@@ -108,17 +109,22 @@ class Observations(ApiBase):
 
     def to_list(self) -> List[Any]:
         """Returns the sources as a Python list of dicts"""
-        return self.data
+        return self.data.dict()["tseries"]
 
     def create_station_locations(self) -> Any:
         station_locations = {}
 
-        for entry in self.data["tseries"]:
+        data = self.data.dict()
+
+        for entry in data["tseries"]:
             station_id = entry["header"]["id"]["stationid"]
             locations = entry["header"]["extra"]["station"]["location"]
+            print(locations)
             for loc in locations:
-                loc["from_time"] = safe_parse_date(loc["from"])
-                loc["to_time"] = safe_parse_date(loc["to"])
+                if "from_" in loc:
+                    loc["from_time"] = safe_parse_date(loc["from_"])
+                if "to" in loc:
+                    loc["to_time"] = safe_parse_date(loc["to"])
             station_locations[station_id] = locations
 
         return station_locations
@@ -149,7 +155,7 @@ class Observations(ApiBase):
                     for key in [
                         "latitude",
                         "longitude",
-                        "elevation(masl/hs)",
+                        "elevation_masl_hs",
                     ]:  # Assuming these are the keys returned by your function
                         if key not in value:
                             value[key] = None  # Initialize the columns to None
@@ -159,7 +165,7 @@ class Observations(ApiBase):
             return {
                 "latitude": None,
                 "longitude": None,
-                "elevation(masl/hs)": None,
+                "elevation_masl_hs": None,
             }
 
         station_locations = self.create_station_locations()
@@ -178,11 +184,11 @@ class Observations(ApiBase):
                 pd.Series(location)
                 if location
                 else pd.Series(
-                    {"latitude": None, "longitude": None, "elevation(masl/hs)": None}
+                    {"latitude": None, "longitude": None, "elevation_masl_hs": None}
                 )
             )
 
-        df[["latitude", "longitude", "elevation(masl/hs)"]] = df.apply(
+        df[["latitude", "longitude", "elevation_masl_hs"]] = df.apply(
             apply_find_location, axis=1, result_type="expand"
         )
 

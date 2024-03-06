@@ -2,13 +2,13 @@ import json
 import re
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, model_validator, validator
+from pydantic import BaseModel, Field, field_validator
 
 from frost.utils.validation import validate_nearest
 
 
 class ObservationsRequest(BaseModel):
-    incobs: bool = False
+    include_observations: bool = Field(True, alias="incobs")
     time: str = "latest"
     element_ids: str | None = Field(None, alias="elementids")
     location: str | None = None
@@ -17,15 +17,15 @@ class ObservationsRequest(BaseModel):
     polygon: str | None = None
 
     class Config:
-        allow_population_by_field_name = True
+        populate_by_name = True
 
-    @validator("incobs", "time", pre=True, each_item=False)
+    @field_validator("incobs", "time")
     def check_required_fields(cls, value, field):
         if value is None:
             raise ValueError(f"{field.name} must be provided")
         return value
 
-    @validator("time")
+    @field_validator("time")
     def time_must_be_valid(cls, v):
         # Regular expression for the time range format
         time_range_pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"
@@ -37,12 +37,12 @@ class ObservationsRequest(BaseModel):
             )
         return v
 
-    @validator("nearest")
+    @field_validator("nearest")
     def validate_nearest(cls, v):
         if validate_nearest(v):
             return v
 
-    @validator("polygon")
+    @field_validator("polygon")
     def validate_polygon(cls, v):
         try:
             polygon_data = json.loads(v)
@@ -79,7 +79,7 @@ class Element(BaseModel):
 
 
 class Value(BaseModel):
-    elevation_masl_hs_: str = Field(..., alias="elevation(masl/hs)")
+    elevation_masl_hs: str = Field(..., alias="elevation(masl/hs)")
     latitude: str
     longitude: str
 
@@ -159,10 +159,6 @@ class Tsery(BaseModel):
     observations: List[Observation]
 
 
-class Data(BaseModel):
+class ObservationsResponse(BaseModel):
     tstype: str
     tseries: List[Tsery]
-
-
-class ObservationsResponse(BaseModel):
-    data: Data

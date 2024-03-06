@@ -1,63 +1,27 @@
-from pydantic import BaseModel, model_validator, Field
-from typing import List
-from .reports import ReportResponse
+from pydantic import BaseModel, field_validator, Field
+from typing import List, Optional
 
 
 class ReportNormalsRequest(BaseModel):
-    ElementID: str
-    Period: str
-    StationID: int
+    element_id: str = Field(..., alias="ElementID")
+    period: str = Field(..., alias="Period")
+    station_id: int = Field(..., alias="StationID")
 
-    @model_validator(mode="before")
-    def check_required_fields(cls, values):
-        if (
-            values.get("ElementID")
-            == None & values.get("Period")
-            == None & values.get("StationID")
-            == None
-        ):
-            raise ValueError("Both ElementID, Period and StationID must be provided")
-        return values
+    class Config:
+        populate_by_name = True
 
-
-class Day(BaseModel):
-    type: str
-
-
-class Month(BaseModel):
-    type: str
-
-
-class Normal(BaseModel):
-    type: str
-
-
-class ItemsProperties(BaseModel):
-    day: Day = Field(..., alias="Day")
-    month: Month = Field(..., alias="Month")
-    normal: Normal = Field(..., alias="Normal")
-
-
-class Items(BaseModel):
-    properties: ItemsProperties
-    required: List[str]
-    type: str
+    @field_validator("element_id", "period", "station_id")
+    def check_required_fields(cls, value, field):
+        if value is None:
+            raise ValueError(f"{field.name} must be provided")
+        return value
 
 
 class Normals(BaseModel):
-    items: Items
-    type: str
+    day: Optional[int] = Field(..., alias="Day")
+    month: Optional[int] = Field(..., alias="Month")
+    normal: int = Field(..., alias="Normal")
 
 
-class Properties(BaseModel):
-    normals: Normals = Field(..., alias="Normals")
-
-
-class NormalsResponse(BaseModel):
-    properties: Properties
-    required: List[str]
-    type: str
-
-
-class ReportNormalsResponse(ReportResponse[NormalsResponse]):
-    pass
+class ReportNormalsResponse(BaseModel):
+    normals: List[Normals] = Field(..., alias="Normals")

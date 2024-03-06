@@ -4,7 +4,7 @@ from typing import Any, List
 
 import pandas as pd
 
-from frost.api.general import FrostApiResponse
+from frost.api import ReportStationRecordsResponse
 from frost.models import ApiBase
 from frost.utils.dataframes import safe_parse_date
 
@@ -12,11 +12,11 @@ from frost.utils.dataframes import safe_parse_date
 
 
 class ReportStationRecords(ApiBase):
-    data: FrostApiResponse
+    data: ReportStationRecordsResponse
 
     def __init__(
         self,
-        data: FrostApiResponse,
+        data: ReportStationRecordsResponse,
     ) -> None:
         """
         Initialize a response class
@@ -26,7 +26,7 @@ class ReportStationRecords(ApiBase):
 
         """
         self.data = data
-        self.date_columns = ["Epoch"]
+        self.date_columns = []
         self.compact_columns = []
 
     def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]

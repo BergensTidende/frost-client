@@ -1,21 +1,18 @@
-from pydantic import BaseModel, model_validator, Field
+from pydantic import BaseModel, field_validator, Field
 
 from typing import List
-from .reports import ReportResponse
-
-
-class SourceId(BaseModel):
-    type: str
-
 
 class ReportDutRequest(BaseModel):
-    source_id: SourceId = Field(..., alias="SourceID")
+    source_id: str = Field(..., alias="SourceID")
 
-    @model_validator(mode="before")
-    def check_required_fields(cls, values):
-        if values.get("SourceID") == None:
-            raise ValueError("SourceID must be provided")
-        return values
+    class Config:
+        populate_by_name = True
+
+    @field_validator("source_id")
+    def check_required_fields(cls, value, field):
+        if value is None:
+            raise ValueError(f"{field.name} must be provided")
+        return value
 
 
 class SummerItem(BaseModel):
@@ -34,7 +31,7 @@ class WinterItem(BaseModel):
     upperinterval: float
 
 
-class DUT(BaseModel):
+class ReportDutResponse(BaseModel):
     first_year_of_period: int = Field(..., alias="firstYearOfPeriod")
     last_year_of_period: int = Field(..., alias="lastYearOfPeriod")
     number_of_seasons: int = Field(..., alias="numberOfSeasons")
@@ -45,7 +42,3 @@ class DUT(BaseModel):
     unit: str
     updated_at: str = Field(..., alias="updatedAt")
     winter: List[WinterItem]
-
-
-class ReportDutResponse(ReportResponse[DUT]):
-    pass

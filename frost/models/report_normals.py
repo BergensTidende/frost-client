@@ -4,19 +4,18 @@ from typing import Any, List
 
 import pandas as pd
 
-from frost.api.general import FrostApiResponse
+from frost.api import ReportNormalsResponse
 from frost.models import ApiBase
-from frost.utils.dataframes import safe_parse_date
 
 # from frost.types import FrostObservationsResponse
 
 
-class ReportNormal(ApiBase):
-    data: FrostApiResponse
+class ReportNormals(ApiBase):
+    data: ReportNormalsResponse
 
     def __init__(
         self,
-        data: FrostApiResponse,
+        data: ReportNormalsResponse,
     ) -> None:
         """
         Initialize a response class

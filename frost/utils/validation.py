@@ -46,21 +46,20 @@ def validate_time(
     v: str, fieldname: str, allowed_keywords: Optional[str | List[str]] = None
 ):
     # Regular expression for the time format
-    time_pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$"
+    time_pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"
 
-    # Check if the input matches the time pattern
+    # Check if the input matches one of the allowed keywords
     if allowed_keywords != None:
         _allowed_keywords = param_to_array(allowed_keywords)
 
-        if v not in _allowed_keywords and not re.match(time_pattern, v):
-            raise ValueError(
-                f"{fieldname} must be 'latest' or in the format 'YYYY-MM-DDTHH:MM:SSZ'"
-            )
-    else:
-        if not re.match(time_pattern, v):
-            raise ValueError(
-                f"{fieldname} must be in the format 'YYYY-MM-DDTHH:MM:SSZ'"
-            )
+        if v in _allowed_keywords:
+            return v
+
+    # Check if the input matches the time pattern
+    if not re.match(time_pattern, v):
+        raise ValueError(
+            f"{fieldname} must be in the format 'YYYY-MM-DDTHH:MM:SSZ'"
+        )
 
     return v
 

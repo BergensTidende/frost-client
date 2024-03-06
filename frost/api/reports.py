@@ -1,6 +1,6 @@
 from typing import Generic, Optional, TypeVar
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from enum import Enum
 
 DataT = TypeVar('DataT')
@@ -15,7 +15,14 @@ class FormatType(str, Enum):
 
 class ReportRequest(BaseModel):
     type: str
-    settings: dict
+    settings: str
+
+    @field_validator("type", "settings")
+    @classmethod
+    def check_required_fields(cls, value, info):
+        if value is None:
+            raise ValueError(f"{info.field_name} must be provided")
+        return value
 
 class ReportResponse(BaseModel, Generic[DataT]):
     data: Optional[DataT] = None

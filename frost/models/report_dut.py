@@ -4,7 +4,7 @@ from typing import Any, List
 
 import pandas as pd
 
-from frost.api.general import FrostApiResponse
+from frost.api import ReportDutResponse
 from frost.models import ApiBase
 from frost.utils.dataframes import safe_parse_date
 
@@ -12,11 +12,11 @@ from frost.utils.dataframes import safe_parse_date
 
 
 class ReportDut(ApiBase):
-    data: FrostApiResponse
+    data: ReportDutResponse
 
     def __init__(
         self,
-        data: FrostApiResponse,
+        data: ReportDutResponse,
     ) -> None:
         """
         Initialize a response class
