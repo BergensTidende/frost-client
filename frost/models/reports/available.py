@@ -9,8 +9,12 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
+class Sourceid(BaseModel):
+    type_: str = Field(..., alias="type")
+
+
 class Properties(BaseModel):
-    source_id: str = Field(..., alias="SourceID")
+    source_id: Sourceid = Field(..., alias="SourceID")
 
 
 class InputSchema(BaseModel):
@@ -37,10 +41,6 @@ class ReferencePeriod(BaseModel):
 
 
 class SeedParameter(BaseModel):
-    type: str
-
-
-class Sourceid(BaseModel):
     type: str
 
 
@@ -891,4 +891,4 @@ class ReportsAvailableResponse(BaseModel):
 
 
 class ReportsAvailableRequest(BaseModel):
-    type: str
+    type: Optional[str] = None

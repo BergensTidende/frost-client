@@ -1,65 +1,60 @@
-from __future__ import annotations
+from typing import List, Optional
 
-from typing import Any, List
+from pydantic import BaseModel, Field, RootModel, field_validator, ValidationInfo
 
-import pandas as pd
+from frost.utils.validation import validate_time_range, validate_wkt
 
-from frost.api import LightningResponse
-from frost.models import ApiBase
-from frost.utils.dataframes import safe_parse_date
-
-# from frost.types import FrostObservationsResponse
+from .reports import FormatType
 
 
-class Lightning(ApiBase):
-    data: LightningResponse
+class LightningRequest(BaseModel):
+    reference_time: str = Field(..., alias="referencetime")
+    format: FormatType
+    geometry: Optional[str] = None
 
-    def __init__(
-        self,
-        data: LightningResponse,
-    ) -> None:
-        """
-        Initialize a response class
+    @field_validator("reference_time", "format")
+    @classmethod
+    def check_required_fields(cls, value: str, info: ValidationInfo):
+        if value is None:
+            raise ValueError(f"{info.field_name} must be provided")
+        return value
 
-        :param list series_json: List of data elements
-        :param SourceResponse sources: Optional instance of sources response
+    @field_validator("reference_time")
+    @classmethod
+    def check_referencetime(cls, values: str, info: ValidationInfo):
+        return validate_time_range(values, info.field_name, "latest")
 
-        """
-        self.data = data
-        self.date_columns = ["Epoch"]
-        self.compact_columns = [
-            "stationId",
-            "sourceId",
-            "validFrom",
-            "timeOffset",
-            "timeResolution",
-            "elementId",
-            "unit",
-        ]
+    @field_validator("geometry")
+    @classmethod
+    def check_geoemtry(cls, values: str, info: ValidationInfo):
+        if values is not None:
+            if validate_wkt(values):
+                return values
+            else:
+                raise ValueError(f"{info.field_name} must be a WKT-string")
 
-    def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
-        """Normalizes the JSON data into a dataframe. This method must be implemented
-        in child classes because the JSON structure is different for each endpoint.
+        return values
 
-        :return pd.DataFrame: the dataframe after normalization
-        """
-        tseries = self.data["tseries"]
-        if not tseries:
-            return pd.DataFrame()
 
-        df = pd.DataFrame(tseries)
+class LightningItem(BaseModel):
+    Epoch: str
+    Point: List[float]
+    CloudIndicator: int
+    PeakCurrentEstimate: int
+    Multiplicity: int
+    SolutionNOfSensors: int
+    LocationDegreesOfFreedom: int
+    EllipseAngle: float
+    EllipseSemiMajorAxis: float
+    EllipseSemiMinorAxis: float
+    ChiSquare: float
+    RiseTime: float
+    PeakToZeroTime: float
+    MaxRateOfRise: float
+    AngleIndicator: int
+    SignalIndicator: int
+    TimingIndicator: int
 
-        if df.empty:
-            return df
 
-        df = df.reset_index()
-
-        return df
-
-    def to_list(self) -> List[Any]:
-        """Returns the sources as a Python list of dicts"""
-        return self.data
-
-    def get_ualf(self) -> str:
-        """Returns data as text"""
-        return self.data
+class LightningResponse(RootModel):
+    root: List[LightningItem]

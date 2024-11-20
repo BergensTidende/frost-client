@@ -1,20 +1,23 @@
-from pydantic import BaseModel, field_validator, Field
-from typing import List
-from .reports import ReportResponse
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
 
 
-class ReportTemperatureConstantsRequest(BaseModel):
-    station_id: int = Field(None, alias="StationID")
+class ReportHumidityConstantsRequest(BaseModel):
+    station_id: int = Field(..., alias="StationID")
 
     class Config:
         populate_by_name = True
 
     @field_validator("station_id")
     @classmethod
-    def check_required_fields(cls, value, info):
+    def check_required_fields(cls, value: str, field: ValidationInfo):
         if value is None:
-            raise ValueError(f"{info.field_name} must be provided")
+            raise ValueError(f"{field.name} must be provided")
         return value
+
+
+# Failing for the moment with error {"error":"json.Unmarshal() failed: json:
+# cannot unmarshal array into Go value of type map[string]interface {}"}
+# observasjon@met.no
 
 
 class Values(BaseModel):
@@ -32,7 +35,7 @@ class Values(BaseModel):
     field_12: float = Field(..., alias="12")
 
 
-class ReportTemperatureConstantsResponse(BaseModel):
+class ReportHumidityConstantsResponse(BaseModel):
     from_time: str = Field(..., alias="FromTime")
     to_time: str = Field(..., alias="ToTime")
     values: Values = Field(..., alias="Values")

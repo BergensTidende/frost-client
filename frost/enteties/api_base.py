@@ -1,30 +1,21 @@
 from __future__ import annotations
 
 import pprint
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    ClassVar,
-    Generic,
-    List,
-    Optional,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Generic, List, Optional, TypeVar
 
 import pandas as pd
 
-from frost.utils.dataframes import convert_date_columns, create_station_id_column
+from frost.utils.dataframes import convert_date_columns
+
+T = TypeVar("T")
 
 
-class ApiBase:
-    data: Any
-    date_columns: List[str]
-    compact_columns: List[str]
+class ApiBase(Generic[T]):
+    data: Optional[T] = None
+    date_columns: List[str] = []
+    compact_columns: List[str] = []
 
-    def __init__(self, data) -> None:
+    def __init__(self, data: T) -> None:
         self.data = data
 
     def to_str(self) -> str:
@@ -50,7 +41,10 @@ class ApiBase:
         # df = create_station_id_column(df)
 
         if compact:
-            df = df[self.compact_columns]
+            df = df[self.compact_columns].copy()
+
+        if isinstance(df, pd.Series):
+            df = df.to_frame()
 
         return df
 
@@ -81,9 +75,9 @@ class ApiBase:
 
         return list(set(source_ids))
 
-    def to_list(self) -> List[Any]:
+    def to_list(self) -> List[T]:
         """Returns the data as a Python list of dicts"""
-        return self.data
+        raise NotImplementedError("to_list method must be implemented in child classes")
 
     def to_csv(self, path: str, compact: bool = False) -> None:
         """Writes the data to a CSV file"""

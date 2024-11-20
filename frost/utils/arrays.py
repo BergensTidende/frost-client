@@ -7,10 +7,7 @@ def param_to_array(param: str | List[str]) -> List[str]:
     :param str | List[str] param: the input, either a string or a list
     :return List[str]: returns a list of strings
     """
-    _params = []
-    if type(param) == str:
-        _params = param.split(",")
-
+    _params = param.split(",") if isinstance(param, str) else []
     for _p in _params:
         _p = _p.strip()
 
@@ -18,10 +15,10 @@ def param_to_array(param: str | List[str]) -> List[str]:
 
 
 def array_to_param(param: str | List[str] | None) -> str | None:
-    if param == None:
+    if param is None:
         return None
 
-    _param = param if type(param) == str else ""
+    _param = param if type(param) is str else ""
 
     if type(param) == list:
         for _p in param:

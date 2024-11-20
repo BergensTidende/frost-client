@@ -6,4 +6,4 @@ report = frost.get_report_windrose(
 )
 if report:
     print("Got report!")
-    print(report.get_winddirections())
+    print(report.)

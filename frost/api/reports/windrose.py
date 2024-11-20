@@ -1,32 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, List
+from typing import List
 
 import pandas as pd
 
 from frost.api import ReportWindroseResponse
 from frost.models import ApiBase
-from frost.utils.dataframes import safe_parse_date
 
 
-class ReportWindrose(ApiBase):
-    data: ReportWindroseResponse
-
-    def __init__(
-        self,
-        data: ReportWindroseResponse,
-    ) -> None:
-        """
-        Initialize a response class
-
-        :param list series_json: List of data elements
-        :param SourceResponse sources: Optional instance of sources response
-
-        """
-        self.data = data
-        self.date_columns = []
-        self.compact_columns = []
-
+class ReportWindrose(ApiBase[ReportWindroseResponse]):
     def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
         """Normalizes the JSON data into a dataframe. This method must be implemented
         in child classes because the JSON structure is different for each endpoint.
@@ -76,6 +58,6 @@ class ReportWindrose(ApiBase):
     def draw_windrose(self):
         """Draws the windrose using the data"""
 
-    def to_list(self) -> List[Any]:
+    def to_list(self) -> List[str]:
         """Returns the sources as a Python list of dicts"""
         return self.data

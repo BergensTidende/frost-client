@@ -1,65 +1,44 @@
-from __future__ import annotations
+from typing import List
 
-from typing import Any, List
-
-import pandas as pd
-
-from frost.api import IdfAvailableResponse
-from frost.models import ApiBase
-from frost.utils.dataframes import safe_parse_date
-
-# from frost.types import FrostObservationsResponse
+from pydantic import BaseModel, field_validator, ValidationInfo
 
 
-class IdfAvailable(ApiBase):
-    data: IdfAvailableResponse
+class IdfAvailableRequest(BaseModel):
+    sources: str
 
-    def __init__(
-        self,
-        data: IdfAvailableResponse,
-    ) -> None:
-        """
-        Initialize a response class
+    @field_validator("sources")
+    @classmethod
+    def sources_must_be_valid(cls, v: str, info: ValidationInfo):
+        if v == "grid":
+            return v
 
-        :param list series_json: List of data elements
-        :param SourceResponse sources: Optional instance of sources response
+        station_ids = v.split(",")
+        station_ids = [station_id.strip() for station_id in station_ids]
 
-        """
-        self.data = data
-        self.date_columns = ["Epoch"]
-        self.compact_columns = [
-            "stationId",
-            "sourceId",
-            "validFrom",
-            "timeOffset",
-            "timeResolution",
-            "elementId",
-            "unit",
-        ]
+        # Check if the input is a list of integers
+        if not all(station_id.isdigit() for station_id in station_ids):
+            raise ValueError(
+                """"sources must be 'grid' or a comma-separated
+                list of station IDs (integers)"""
+            )
 
-    def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
-        """Normalizes the JSON data into a dataframe. This method must be implemented
-        in child classes because the JSON structure is different for each endpoint.
+        return v
 
-        :return pd.DataFrame: the dataframe after normalization
-        """
-        tseries = self.data["tseries"]
-        if not tseries:
-            return pd.DataFrame()
 
-        df = pd.DataFrame(tseries)
+class SpatialExtent(BaseModel):
+    bottom: float
+    left: float
+    top: float
+    right: float
 
-        if df.empty:
-            return df
 
-        df = df.reset_index()
+class Source(BaseModel):
+    sourceID: str
+    updatedAt: str
+    spatialExtent: SpatialExtent
+    durations: List[int]
+    frequencies: List[int]
 
-        return df
 
-    def to_list(self) -> List[Any]:
-        """Returns the sources as a Python list of dicts"""
-        return self.data
-
-    def get_ualf(self) -> str:
-        """Returns data as text"""
-        return self.data
+class IdfAvailableResponse(BaseModel):
+    sources: List[Source]

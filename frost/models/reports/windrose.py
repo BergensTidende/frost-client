@@ -1,10 +1,10 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, field_validator, Field
+from pydantic import BaseModel, Field, validator, ValidationInfo
 
 from frost.utils.validation import validate_time
 
-from .reports import ScaleType, ReportResponse
+from .reports import ScaleType
 
 
 class ReportWindroseRequest(BaseModel):
@@ -18,24 +18,26 @@ class ReportWindroseRequest(BaseModel):
     class Config:
         populate_by_name = True
 
-    @field_validator("station_id", "from_time", "to_time")
+    @validator("station_id", "from_time", "to_time")
     @classmethod
-    def check_required_fields(cls, value):
+    def check_required_fields(cls, value: str):
         if value is None:
             raise ValueError(
-                "All of station_id, from_time and to_time must be provided"
+                """The parameters station_id, from_time and to_time must be
+                provided to make a request"""
             )
         return value
 
-    @field_validator("from_time", "to_time")
+    @validator("from_time", "to_time")
     @classmethod
-    def check_valid_from_time(cls, value, info):
+    def check_valid_from_time(cls, value: str, info: ValidationInfo):
         return validate_time(value, info.field_name)
 
 
 class Extras(BaseModel):
     title: str
     value: float
+
 
 class Metadata(BaseModel):
     automatic_data: Optional[List[str]] = Field(..., alias="automaticData")

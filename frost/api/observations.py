@@ -1,164 +1,83 @@
-import json
-import re
+from __future__ import annotations
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, field_validator
-
-from frost.utils.validation import validate_nearest
+from frost.utils.arrays import array_to_param
 
 
-class ObservationsRequest(BaseModel):
-    include_observations: bool = Field(True, alias="incobs")
-    time: str = "latest"
-    element_ids: str | None = Field(None, alias="elementids")
-    location: str | None = None
-    station_ids: str | None = Field(None, alias="stationids")
-    nearest: str | None = None
-    polygon: str | None = None
+from frost.api.base_endpoint import BaseEndpoint
+from frost.models.observations_models import ObservationsRequest, ObservationsResponse
+from frost.entities.observations import Observations
 
-    class Config:
-        populate_by_name = True
+class ObservationsEndpoint(BaseEndpoint):
+    request_model = ObservationsRequest
+    response_model = ObservationsResponse
+    endpoint = "obs/met.no/filter"
 
-    @field_validator("incobs", "time")
-    def check_required_fields(cls, value, field):
-        if value is None:
-            raise ValueError(f"{field.name} must be provided")
-        return value
+    def get_observations(
+        self,
+        include_observations: bool = True,
+        time: str = "latest",
+        element_ids: Optional[str | List[str]] = None,
+        location: Optional[str] = None,
+        station_ids: Optional[str | List[str]] = None,
+        nearest: Optional[str] = None,
+        polygon: Optional[str] = None,
+    ) -> Observations | None:
+        """
+        This form allows a dataset of time series type 'filter' to be
+        downloaded from the Frost API
 
-    @field_validator("time")
-    def time_must_be_valid(cls, v):
-        # Regular expression for the time range format
-        time_range_pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"
+        To make a valid request, you must specify the when, where and what of the
+        observation data you want: you must set the time parameter,
+        an element type parameter and at least one station or (geo)location type
+        parameter. Matching is case-insensitive, and you can use asterisks (*) for
+        wildcard matching.
 
-        # Check if the input is either 'latest' or matches the time range pattern
-        if v != "latest" and not re.match(time_range_pattern, v):
-            raise ValueError(
-                "time must be 'latest' or in the format 'YYYY-MM-DDTHH:MM:SSZ/YYYY-MM-DDTHH:MM:SSZ'"
-            )
-        return v
+        :param bool include_observations: If you want to get weather observations set
+        to True. If you only want information about the observations (metadata) set to
+        False. Defaults to True
+        :param str time: A time specification to select relevant observation times.
+        Either a time range formated as "2020-01-01T00:00:00Z/2020-01-02T23:59:59Z",
+        or the keyword latest can be used. By default if you use latest the
+        maximum age of observations will be 3 hours, and only 1 latest observation will
+        be returned. Defaults to "latest
+        :param Optional[str  |  List[str]] element_ids: A comma-separated list of
+        weather parameters. Use asterisk (*) for wildcard matching. Example: wind*,
+        air_temperature. Defaults to None
+        :param Optional[str] location: The country, county, municipality or place name
+        of the weather observations. Use asterisk (*) for wildcard matching.
+        Example: *stad,bergen, defaults to None
+        :param Optional[str | List[str]] station_ids: A comma-separated list of internal
+        MET Norway weather station ID numbers. Use asterisk (*) for wildcard matching.
+        Example: 18700,55*, defaults to None
+        :param Optional[str] nearest: A geographic search parameter to look for weather
+        observations around a geographic point.
+        Example: {"maxdist":7.5,"maxcount":3,"points":[{"lon":10.72,"lat":59.94}]},
+        defaults to None
+        :param Optional[str] polygon: A geographic search parameter to look for weather
+        observations inside a geographic area (specifically a polygon).
+        Example: [{"lat":59.93,"lon":10.05},{"lat":59.93,"lon":11},
+        {"lat":60.25,"lon":10.77}], defaults to None
+        :return Observations: Weather observations object
+        """
 
-    @field_validator("nearest")
-    def validate_nearest(cls, v):
-        if validate_nearest(v):
-            return v
+        parameters = {
+            "station_ids": array_to_param(station_ids),
+            "include_observations": include_observations,
+            "time": time,
+        }
 
-    @field_validator("polygon")
-    def validate_polygon(cls, v):
-        try:
-            polygon_data = json.loads(v)
-            if not isinstance(polygon_data, list):
-                raise ValueError("Polygon must be a JSON array")
+        if location is not None:
+            parameters["location"] = time
 
-            # Validate each point in the polygon
-            if not all(
-                isinstance(point, dict) and "lon" in point and "lat" in point
-                for point in polygon_data
-            ):
-                raise ValueError(
-                    "Each point in polygon must be a dictionary with 'lon' and 'lat' keys"
-                )
+        if element_ids is not None:
+            parameters["elementids"] = array_to_param(element_ids)
 
-        except json.JSONDecodeError:
-            raise ValueError("Polygon must be valid JSON")
+        if nearest is not None:
+            parameters["nearest"] = nearest
 
-        return v
+        if polygon is not None:
+            parameters["polygon"] = polygon
 
-
-class Id(BaseModel):
-    level: int
-    parameterid: int
-    sensor: int
-    stationid: int
-
-
-class Element(BaseModel):
-    description: str
-    id: str
-    name: str
-    unit: str
-
-
-class Value(BaseModel):
-    elevation_masl_hs: str = Field(..., alias="elevation(masl/hs)")
-    latitude: str
-    longitude: str
-
-
-class LocationItem(BaseModel):
-    from_: str = Field(..., alias="from")
-    to: str
-    value: Value
-
-
-class Station(BaseModel):
-    location: List[LocationItem]
-    shortname: str
-
-
-class Level(BaseModel):
-    unit: str
-    value: str
-
-
-class Geometry(BaseModel):
-    level: Level
-
-
-class ExposureItem(BaseModel):
-    from_: str = Field(..., alias="from")
-    to: str
-    value: str
-
-
-class PerformanceItem(BaseModel):
-    from_: str = Field(..., alias="from")
-    to: str
-    value: str
-
-
-class Quality(BaseModel):
-    exposure: List[ExposureItem]
-    performance: List[PerformanceItem]
-
-
-class Timeseries(BaseModel):
-    geometry: Geometry
-    quality: Quality
-    timeoffset: str
-    timeresolution: str
-
-
-class Extra(BaseModel):
-    element: Element
-    station: Station
-    timeseries: Timeseries
-
-
-class Available(BaseModel):
-    from_: str = Field(..., alias="from")
-
-
-class Header(BaseModel):
-    id: Id
-    extra: Extra
-    available: Available
-
-
-class Body(BaseModel):
-    qualitycode: str
-    value: str
-
-
-class Observation(BaseModel):
-    time: str
-    body: Body
-
-
-class Tsery(BaseModel):
-    header: Header
-    observations: List[Observation]
-
-
-class ObservationsResponse(BaseModel):
-    tstype: str
-    tseries: List[Tsery]
+        response_data = self.get_data(**parameters)
+        return Observations(response_data)

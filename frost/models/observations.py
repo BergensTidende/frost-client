@@ -1,195 +1,170 @@
-from __future__ import annotations
+import json
+import re
+from typing import List
 
-from typing import Any, List
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
 
-import pandas as pd
-
-from frost.api import ObservationsResponse
-from frost.models import ApiBase
-from frost.utils.dataframes import safe_parse_date
-
-# from frost.types import FrostObservationsResponse
+from frost.utils.validation import validate_nearest
 
 
-class Observations(ApiBase):
-    data: ObservationsResponse
+class ObservationsRequest(BaseModel):
+    include_observations: bool = Field(True, alias="incobs")
+    time: str = "latest"
+    element_ids: str | None = Field(None, alias="elementids")
+    location: str | None = None
+    station_ids: str | None = Field(None, alias="stationids")
+    nearest: str | None = None
+    polygon: str | None = None
 
-    def __init__(
-        self,
-        data: ObservationsResponse,
-    ) -> None:
-        """
-        Initialize a response class
+    class Config:
+        populate_by_name = True
 
-        :param list series_json: List of data elements
-        :param SourceResponse sources: Optional instance of sources response
+    @field_validator("include_observations", "time")
+    @classmethod
+    def check_required_fields(cls, value: str, field: ValidationInfo):
+        if value is None:
+            raise ValueError(f"{field.name} must be provided")
+        return value
 
-        """
-        self.data = data
-        self.date_columns = ["referenceTime"]
-        self.compact_columns = [
-            "stationId",
-            "sourceId",
-            "validFrom",
-            "timeOffset",
-            "timeResolution",
-            "elementId",
-            "unit",
-        ]
+    @field_validator("time")
+    @classmethod
+    def time_must_be_valid(cls, v: str):
+        # Regular expression for the time range format
+        time_range_pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"  # noqa: E501 # pylint: disable=line-too-lon
 
-    def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
-        """Normalizes the JSON data into a dataframe. This method must be implemented
-        in child classes because the JSON structure is different for each endpoint.
-
-        :return pd.DataFrame: the dataframe after normalization
-        """
-        data = self.data.dict()
-        tseries = data.get("tseries", None)
-        if not tseries:
-            return pd.DataFrame()
-
-        df = pd.json_normalize(
-            tseries,
-            "observations",
-            meta=[
-                ["header", "id", "level"],
-                ["header", "id", "parameterid"],
-                ["header", "id", "sensor"],
-                ["header", "id", "stationid"],
-                ["header", "extra", "element", "description"],
-                ["header", "extra", "element", "id"],
-                ["header", "extra", "element", "name"],
-                ["header", "extra", "element", "unit"],
-                ["header", "extra", "station", "shortname"],
-                ["header", "extra", "station", "location"],
-                ["header", "extra", "timeseries", "geometry", "level", "unit"],
-                ["header", "extra", "timeseries", "geometry", "level", "value"],
-                ["header", "extra", "timeseries", "quality", "exposure"],
-                ["header", "extra", "timeseries", "quality", "performance"],
-                ["header", "extra", "timeseries", "timeoffset"],
-                ["header", "extra", "timeseries", "timeresolution"],
-                ["header", "available", "from"],
-            ],
-            errors="ignore",
-        )
-
-        if df.empty:
-            return df
-
-        df = df.reset_index()
-
-        df = df.rename(
-            columns={
-                "time": "referenceTime",
-                "body.qualitycode": "qualityCode",
-                "body.value": "value",
-                "header.id.level": "level",
-                "header.id.parameterid": "parameterId",
-                "header.id.sensor": "sensor",
-                "header.id.stationid": "stationId",
-                "header.extra.element.description": "description",
-                "header.extra.element.id": "elementId",
-                "header.extra.element.name": "name",
-                "header.extra.element.unit": "unit",
-                "header.extra.station.shortname": "shortname",
-                "header.extra.station.location": "location",
-                "header.extra.timeseries.geometry.level.unit": "geometryUnit",
-                "header.extra.timeseries.geometry.level.value": "geometryValue",
-                "header.extra.timeseries.quality.exposure": "exposure",
-                "header.extra.timeseries.quality.performance": "performance",
-                "header.extra.timeseries.timeoffset": "timeOffset",
-                "header.extra.timeseries.timeresolution": "timeResolution",
-                "header.available.from": "availableFrom",
-            }
-        )
-
-        df = self.add_location(df)
-
-        return df
-
-    def to_list(self) -> List[Any]:
-        """Returns the sources as a Python list of dicts"""
-        return self.data.dict()["tseries"]
-
-    def create_station_locations(self) -> Any:
-        station_locations = {}
-
-        data = self.data.dict()
-
-        for entry in data["tseries"]:
-            station_id = entry["header"]["id"]["stationid"]
-            locations = entry["header"]["extra"]["station"]["location"]
-            print(locations)
-            for loc in locations:
-                if "from_" in loc:
-                    loc["from_time"] = safe_parse_date(loc["from_"])
-                if "to" in loc:
-                    loc["to_time"] = safe_parse_date(loc["to"])
-            station_locations[station_id] = locations
-
-        return station_locations
-
-    def add_location(self, df: pd.DataFrame) -> pd.DataFrame:
-        """adds the correct location to the observations by comparing the observation
-        time with the location time intervals
-
-        :param pd.DataFrame df: the dataframe to enrich with location data
-        :return pd.DataFrame: the enriched dataframe
-        """
-
-        # Util function to find matching location for each observation
-        # Step 2: Define a function to find the correct location based on time and stationid
-        def find_location_for_station(
-            obs_time, station_id, station_locations
-        ) -> dict | None:
-            if obs_time.tzinfo is None:
-                obs_time = obs_time.tz_localize("Europe/Oslo")
-            elif str(obs_time.tzinfo) != "Europe/Oslo":
-                obs_time = obs_time.tz_convert("Europe/Oslo")
-
-            locations = station_locations.get(station_id, [])
-            for loc in locations:
-                # Handle None values by defining open-ended logic
-                if loc["from_time"] <= obs_time <= loc["to_time"]:
-                    value = loc["value"]
-                    for key in [
-                        "latitude",
-                        "longitude",
-                        "elevation_masl_hs",
-                    ]:  # Assuming these are the keys returned by your function
-                        if key not in value:
-                            value[key] = None  # Initialize the columns to None
-
-                    return value
-
-            return {
-                "latitude": None,
-                "longitude": None,
-                "elevation_masl_hs": None,
-            }
-
-        station_locations = self.create_station_locations()
-
-        # Step 3: Process observations to enrich them with location data
-        # Assuming df_observations is your DataFrame containing observations including 'time' and 'stationid'
-        df["referenceTime"] = pd.to_datetime(df["referenceTime"])
-
-        # Check if the datetime objects are tz-aware and convert or localize accordingly
-        def apply_find_location(row):
-            # Assuming 'station_locations' is accessible and contains location data mapped by stationId
-            location = find_location_for_station(
-                row["referenceTime"], row["stationId"], station_locations
+        # Check if the input is either 'latest' or matches the time range pattern
+        if v != "latest" and not re.match(time_range_pattern, v):
+            raise ValueError(
+                """time must be 'latest' or in the format
+                'YYYY-MM-DDTHH:MM:SSZ/YYYY-MM-DDTHH:MM:SSZ'"""
             )
-            return (
-                pd.Series(location)
-                if location
-                else pd.Series(
-                    {"latitude": None, "longitude": None, "elevation_masl_hs": None}
+        return v
+
+    @field_validator("nearest")
+    @classmethod
+    def validate_nearest(cls, v: str):
+        if validate_nearest(v):
+            return v
+
+    @field_validator("polygon")
+    @classmethod
+    def validate_polygon(cls, v: str):
+        try:
+            polygon_data = json.loads(v)
+            if not isinstance(polygon_data, list):
+                raise ValueError("Polygon must be a JSON array")
+
+            # Validate each point in the polygon
+            if not all(
+                isinstance(point, dict) and "lon" in point and "lat" in point
+                for point in polygon_data
+            ):
+                raise ValueError(
+                    """Each point in polygon must be a dictionary with
+                    'lon' and 'lat' keys"""
                 )
-            )
 
-        df[["latitude", "longitude", "elevation_masl_hs"]] = df.apply(
-            apply_find_location, axis=1, result_type="expand"
-        )
+        except json.JSONDecodeError as e:
+            raise ValueError("Polygon must be valid JSON") from e
 
-        return df
+        return v
+
+
+class Id(BaseModel):
+    level: int
+    parameterid: int
+    sensor: int
+    stationid: int
+
+
+class Element(BaseModel):
+    description: str
+    id: str
+    name: str
+    unit: str
+
+
+class Value(BaseModel):
+    elevation_masl_hs: str = Field(..., alias="elevation(masl/hs)")
+    latitude: str
+    longitude: str
+
+
+class LocationItem(BaseModel):
+    from_: str = Field(..., alias="from")
+    to: str
+    value: Value
+
+
+class Station(BaseModel):
+    location: List[LocationItem]
+    shortname: str
+
+
+class Level(BaseModel):
+    unit: str
+    value: str
+
+
+class Geometry(BaseModel):
+    level: Level
+
+
+class ExposureItem(BaseModel):
+    from_: str = Field(..., alias="from")
+    to: str
+    value: str
+
+
+class PerformanceItem(BaseModel):
+    from_: str = Field(..., alias="from")
+    to: str
+    value: str
+
+
+class Quality(BaseModel):
+    exposure: List[ExposureItem]
+    performance: List[PerformanceItem]
+
+
+class Timeseries(BaseModel):
+    geometry: Geometry
+    quality: Quality
+    timeoffset: str
+    timeresolution: str
+
+
+class Extra(BaseModel):
+    element: Element
+    station: Station
+    timeseries: Timeseries
+
+
+class Available(BaseModel):
+    from_: str = Field(..., alias="from")
+
+
+class Header(BaseModel):
+    id: Id
+    extra: Extra
+    available: Available
+
+
+class Body(BaseModel):
+    qualitycode: str
+    value: str
+
+
+class Observation(BaseModel):
+    time: str
+    body: Body
+
+
+class Tsery(BaseModel):
+    header: Header
+    observations: List[Observation]
+
+
+class ObservationsResponse(BaseModel):
+    tstype: str
+    tseries: List[Tsery]

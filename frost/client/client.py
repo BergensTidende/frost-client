@@ -1,42 +1,41 @@
 from __future__ import annotations
 
-import json
 from os import getenv
-from typing import Any, Dict, List, Optional, Union, cast
+from typing import Dict, List, Optional, Type, TypeVar, Union
 from urllib.parse import urljoin
 
 import requests
 from dotenv import load_dotenv
-from pydantic import ValidationError
+from pydantic import ValidationError, BaseModel
 
 from frost.api import (
-    IdfRequest,
     IdfAvailableRequest,
-    LightningRequest,
-    ObservationsRequest,
-    ReportRequest,
-    ReportDutRequest,
-    ReportHumidityConstantsRequest,
-    ReportIdfRequest,
-    ReportNormalsRequest,
-    ReportStationRecordsRequest,
-    ReportTemperatureConstantsRequest,
-    ReportWindroseRequest,
-    ReportsAvailableRequest,
-    ScaleType,
-    IdfResponse,
     IdfAvailableResponse,
+    IdfRequest,
+    IdfResponse,
+    LightningRequest,
     LightningResponse,
+    ObservationsRequest,
     ObservationsResponse,
-    ReportResponse,
+    ReportDutRequest,
     ReportDutResponse,
+    ReportHumidityConstantsRequest,
     ReportHumidityConstantsResponse,
+    ReportIdfRequest,
     ReportIdfResponse,
+    ReportNormalsRequest,
     ReportNormalsResponse,
-    ReportStationRecordsResponse,
-    ReportTemperatureConstantsResponse,
-    ReportWindroseResponse,
+    ReportRequest,
+    ReportResponse,
+    ReportsAvailableRequest,
     ReportsAvailableResponse,
+    ReportStationRecordsRequest,
+    ReportStationRecordsResponse,
+    ReportTemperatureConstantsRequest,
+    ReportTemperatureConstantsResponse,
+    ReportWindroseRequest,
+    ReportWindroseResponse,
+    ScaleType,
 )
 from frost.models import (
     Idf,
@@ -47,30 +46,18 @@ from frost.models import (
     ReportHumidityConstants,
     ReportIdf,
     ReportNormals,
+    ReportsAvailable,
     ReportStationRecords,
     ReportTemperatureConstants,
     ReportWindrose,
-    ReportsAvailable,
 )
 from frost.utils.arrays import array_to_param
 
 load_dotenv()
 
+T = TypeVar("T", bound=BaseModel)
 
-class APIError(Exception):
-    """Raised when the API responds with a 400 or 404"""
-
-    code: Optional[str]
-    message: Optional[str]
-    reason: Optional[str]
-
-    def __init__(self, e) -> None:
-        self.code = e.get("code")
-        self.message = e.get("message")
-        self.reason = e.get("reason")
-
-
-class Frost(object):
+class Frost:
     """Interface to frost.met.no API
 
     The Frost API key should be exposed as a environment variable called
@@ -155,30 +142,27 @@ class Frost(object):
             response = self.session.get(url, params=parameters_dict, timeout=60)
             response.raise_for_status()
 
-            # If we got the status code for success
-            if response.status_code == 200:
-                json = response.json()
-
-                ## If we got a data type status code (request succeeded)
-                if "data" in json:
-                    return json["data"]
-
-                if "error" in json:
-                    raise APIError(json["error"])
-                else:
-                    raise APIError(
-                        {
-                            "code": "no data",
-                            "message": "no data field in json",
-                        }
-                    )
-
-            # If we got an error type status code (request failed)
-            else:
+            if response.status_code != 200:
                 raise APIError(
                     {
                         "code": "Arguments validation error",
-                        "message": "\tstatus code: {}".format(response.status_code),
+                        "message": f"\tstatus code: {response.status_code}",
+                    }
+                )
+
+            json = response.json()
+
+            # If we got a data type status code (request succeeded)
+            if "data" in json:
+                return json["data"]
+
+            if "error" in json:
+                raise APIError(json["error"])
+            else:
+                raise APIError(
+                    {
+                        "code": "no data",
+                        "message": "no data field in json",
                     }
                 )
 
@@ -189,7 +173,60 @@ class Frost(object):
                     "code": "Arguments validation error",
                     "message": f"Request error: {str(e)}",
                 }
-            )
+            ) from e
+
+    def validate_request_and_response(
+        self,
+        request_type: str,
+        request_model: Type[BaseModel],
+        response_model: Type[BaseModel],
+        return_model: Type[BaseModel],
+        request_data: dict,
+        report_response_model: Optional[Type[BaseModel]] = None,
+    ) -> Union[
+        IdfAvailableResponse,
+        IdfResponse,
+        ObservationsResponse,
+        LightningResponse,
+        ReportResponse,
+        None,
+    ]:
+        try:
+            validated_request = request_model(**request_data)
+        except ValidationError as e:
+            raise APIError(
+                {
+                    "code": "Arguments validation error",
+                    "message": e.json(),
+                }
+            ) from e
+
+        request_dict = validated_request.dict(exclude_unset=True, by_alias=True)
+
+        response_data = self.make_request(request_type, request_dict)
+
+        if response_data is None:
+            return None
+
+        validated_data = None
+
+        try:
+            validated_data = response_model(**response_data)
+        except ValidationError as e:
+            raise APIError(
+                {
+                    "code": "Arguments validation error",
+                    "message": e.json(),
+                }
+            ) from e
+
+        if validated_data is None:
+            return None
+
+        if request_type == "reports":
+            report_data = response_model.parse_obj(response_data)
+        else:
+            return return_model(validated_data)
 
     def get_idf_available(
         self, sources: Optional[str | List[str]] = None
@@ -206,43 +243,17 @@ class Frost(object):
         """
         parameters = {}
 
-        if sources != None:
+        if sources is not None:
             sources = array_to_param(sources)
             parameters["sources"] = sources
 
-        try:
-            # Validate the arguments
-            params = IdfAvailableRequest(**parameters)
-        except ValidationError as e:
-            # Handle the validation error
-            raise APIError(
-                {
-                    "code": "Arguments validation error",
-                    "message": e.json(),
-                }
-            )
-
-        parameters_dict = params.dict(exclude_unset=True, by_alias=True)
-
-        data = self.make_request("idf/available", parameters_dict)
-
-        if data == None:
-            return None
-
-        try:
-            validated_data = IdfAvailableResponse.parse_obj(data)
-        except ValidationError as e:
-            # Handle the validation error
-            raise APIError(
-                {
-                    "code": "Arguments validation error",
-                    "message": e.json(),
-                }
-            )
-
-        idf_available = IdfAvailable(validated_data)
-
-        return idf_available
+        return self.validate_request_and_response(
+            "idf/available",
+            IdfAvailableRequest,
+            IdfAvailableResponse,
+            IdfAvailable,
+            parameters,
+        )
 
     def get_idf(
         self,
@@ -284,54 +295,28 @@ class Frost(object):
         """
         parameters = {}
 
-        if sources != None:
+        if sources is not None:
             parameters["sources"] = array_to_param(sources)
 
-        if durations != None:
+        if durations is not None:
             parameters["durations"] = array_to_param(durations)
 
-        if frequencies != None:
+        if frequencies is not None:
             parameters["frequencies"] = array_to_param(frequencies)
 
-        if location != None:
+        if location is not None:
             parameters["location"] = location
 
-        if unit != None:
+        if unit is not None:
             parameters["unit"] = unit
 
-        try:
-            # Validate the arguments
-            params = IdfRequest(**parameters)
-        except ValidationError as e:
-            # Handle the validation error
-            raise APIError(
-                {
-                    "code": "Arguments validation error",
-                    "message": e.json(),
-                }
-            )
-
-        parameters_dict = params.dict(exclude_unset=True, by_alias=True)
-
-        data = self.make_request("idf", parameters_dict)
-
-        if data == None:
-            return None
-
-        try:
-            validated_data = IdfResponse.parse_obj(data)
-        except ValidationError as e:
-            # Handle the validation error
-            raise APIError(
-                {
-                    "code": "Arguments validation error",
-                    "message": e.json(),
-                }
-            )
-
-        idf = Idf(validated_data)
-
-        return idf
+        return self.validate_request_and_response(
+            "idf",
+            IdfRequest,
+            IdfResponse,
+            Idf,
+            parameters,
+        )
 
     def get_lightning(
         self,
@@ -360,141 +345,22 @@ class Frost(object):
             "geometry": geometry,
         }
 
-        try:
-            # Validate the arguments
-            params = LightningRequest(parameters)
-        except ValidationError as e:
-            # Handle the validation error
-            raise APIError(
-                {
-                    "code": "Arguments validation error",
-                    "message": e.json(),
-                }
-            )
+        return self.validate_request_and_response(
+            "lightning",
+            LightningRequest,
+            LightningResponse,
+            Lightning,
+            parameters,
+        )
 
-        # Convert the validated parameters to a dictionary
-        parameters_dict = params.dict(exclude_unset=True, by_alias=True)
-
-        data = self.make_request("lightning", parameters_dict)
-
-        if data == None:
-            return None
-
-        try:
-            validated_data = LightningResponse.parse_obj(data)
-        except ValidationError as e:
-            # Handle the validation error
-            raise APIError(
-                {
-                    "code": "Arguments validation error",
-                    "message": e.json(),
-                }
-            )
-
-        lightning = Lightning(validated_data)
-        return lightning
-
-    def get_observations(
-        self,
-        include_observations: bool = True,
-        time: str = "latest",
-        element_ids: Optional[str | List[str]] = None,
-        location: Optional[str] = None,
-        station_ids: Optional[str | List[str]] = None,
-        nearest: Optional[str] = None,
-        polygon: Optional[str] = None,
-    ) -> Observations | None:
-        """
-        This form allows a dataset of time series type 'filter' to be
-        downloaded from the Frost API
-
-        To make a valid request, you must specify the when, where and what of the
-        observation data you want: you must set the time parameter,
-        an element type parameter and at least one station or (geo)location type
-        parameter. Matching is case-insensitive, and you can use asterisks (*) for
-        wildcard matching.
-
-        :param bool include_observations: If you want to get weather observations set to True.
-        If you only want information about the observations (metadata) set to
-        False. Defaults to True
-        :param str time: A time specification to select relevant observation times.
-        Either a time range formated as "2020-01-01T00:00:00Z/2020-01-02T23:59:59Z",
-        or the keyword latest can be used. By default if you use latest the
-        maximum age of observations will be 3 hours, and only 1 latest observation will
-        be returned. Defaults to "latest
-        :param Optional[str  |  List[str]] element_ids: A comma-separated list of weather
-        parameters. Use asterisk (*) for wildcard matching. Example: wind*,
-        air_temperature. Defaults to None
-        :param Optional[str] location: The country, county, municipality or place name
-        of the weather observations. Use asterisk (*) for wildcard matching.
-        Example: *stad,bergen, defaults to None
-        :param Optional[str | List[str]] station_ids: A comma-separated list of internal
-        MET Norway weather station ID numbers. Use asterisk (*) for wildcard matching.
-        Example: 18700,55*, defaults to None
-        :param Optional[str] nearest: A geographic search parameter to look for weather
-        observations around a geographic point.
-        Example: {"maxdist":7.5,"maxcount":3,"points":[{"lon":10.72,"lat":59.94}]},
-        defaults to None
-        :param Optional[str] polygon: A geographic search parameter to look for weather
-        observations inside a geographic area (specifically a polygon).
-        Example: [{"lat":59.93,"lon":10.05},{"lat":59.93,"lon":11},
-        {"lat":60.25,"lon":10.77}], defaults to None
-        :return Observations: Weather observations object
-        """
-        # Convert station_ids and element_ids to comma separated strings if they are lists
-
-        parameters = {
-            "station_ids": array_to_param(station_ids),
-            "include_observations": include_observations,
-            "time": time,
-        }
-
-        if location != None:
-            parameters["location"] = time
-
-        if element_ids != None:
-            parameters["elementids"] = array_to_param(element_ids)
-
-        if nearest != None:
-            parameters["nearest"] = nearest
-
-        if polygon != None:
-            parameters["polygon"] = polygon
-
-        try:
-            # Validate the arguments
-            params = ObservationsRequest(**parameters)
-        except ValidationError as e:
-            # Handle the validation error
-            raise APIError(
-                {
-                    "code": "Arguments validation error",
-                    "message": e.json(),
-                }
-            )
-
-        # Convert the validated parameters to a dictionary
-        parameters_dict = params.dict(exclude_unset=True, by_alias=True)
-
-        # True or False to lowercase as the API expects it
-        if "incobs" in parameters_dict:
-            parameters_dict["incobs"] = str(parameters_dict["incobs"]).lower()
-
-        data = self.make_request("obs/met.no/filter", parameters_dict)
-
-        if data == None:
-            return None
-
-        validated_data = ObservationsResponse.parse_obj(data)
-
-        observations = Observations(validated_data)
-
-        return observations
 
     def get_report(
         self,
-        type: str,
-        settings: str,
+        report_type: str,
+        report_request_model: Type[BaseModel],
+        report_response_model: Type[BaseModel],
+        report_return_model: Type[BaseModel],
+        report_parameters: dict,
     ) -> Union[
         ReportDutResponse,
         ReportHumidityConstantsResponse,
@@ -514,42 +380,22 @@ class Frost(object):
         IdfAvailableResponse, ReportIdfResponse, ReportWindroseResponse,
         None, ]: Response from the API
         """
+
+        params = report_request_model(**report_parameters)
+        settings = params.json(exclude_unset=True, by_alias=True)
+
         parameters = {
-            "type": type,
+            "type": report_type,
             "settings": settings,
         }
 
-        try:
-            # Validate the arguments
-            report_request = ReportRequest(**parameters)
-        except ValidationError as e:
-            # Handle the validation error
-            raise APIError(
-                {
-                    "code": "Arguments validation error",
-                    "message": e.json(),
-                }
-            )
-
-        report_request_dict = report_request.dict(exclude_unset=True, by_alias=True)
-
-        data = self.make_request("reports", report_request_dict)
-
-        if data == None:
-            return None
-
-        try:
-            validated_data = ReportResponse.parse_obj(data)
-        except ValidationError as e:
-            # Handle the validation error
-            raise APIError(
-                {
-                    "code": "Arguments validation error",
-                    "message": e.json(),
-                }
-            )
-
-        return validated_data
+        return self.validate_request_and_response(
+            "reports",
+            ReportRequest,
+            ReportResponse,
+            report_return_model,
+            parameters,
+        )
 
     def get_report_dut(self, source_id: str) -> ReportDut:
         """Get DUT reports from the Frost API
@@ -561,37 +407,9 @@ class Frost(object):
             source_id: source_id,
         }
 
-        try:
-            # Validate the arguments
-            params = ReportDutRequest(**parameters)
-        except ValidationError as e:
-            # Handle the validation error
-            raise APIError(
-                {
-                    "code": "Arguments validation error",
-                    "message": e.json(),
-                }
-            )
-
-        # Convert the validated parameters to a dictionary
-        settings = params.json(exclude_unset=True, by_alias=True)
-
-        report = self.get_report("DUT", settings)
-
-        try:
-            data = ReportDutResponse.parse_obj(report)
-        except ValidationError as e:
-            # Handle the validation error
-            raise APIError(
-                {
-                    "code": "Arguments validation error",
-                    "message": e.json(),
-                }
-            )
-
-        report_dut = ReportDut(data)
-
-        return report_dut
+        return self.get_report(
+            "DUT", ReportDutRequest, ReportDutResponse, ReportDut, parameters
+        )
 
     def get_report_humidity_constants(
         self, source_id: str
@@ -615,7 +433,7 @@ class Frost(object):
                     "code": "Arguments validation error",
                     "message": e.json(),
                 }
-            )
+            ) from e
 
         # Convert the validated parameters to a dictionary
         settings = params.json(exclude_unset=True, by_alias=True)
@@ -631,7 +449,7 @@ class Frost(object):
                     "code": "Arguments validation error",
                     "message": e.json(),
                 }
-            )
+            ) from e
 
         report_humidity_constants = ReportHumidityConstants(data)
 
@@ -660,7 +478,7 @@ class Frost(object):
                     "code": "Arguments validation error",
                     "message": e.json(),
                 }
-            )
+            ) from e
 
         # Convert the validated parameters to a dictionary
         settings = params.json(exclude_unset=True, by_alias=True)
@@ -676,7 +494,7 @@ class Frost(object):
                     "code": "Arguments validation error",
                     "message": e.json(),
                 }
-            )
+            ) from e
 
         report_idf = ReportIdf(data)
 
@@ -687,12 +505,11 @@ class Frost(object):
     ) -> ReportNormals | None:
         """_summary_
 
-        :param str element_id: _description_
-        :param str period: _description_
-        :param int station_id: _description_
-        :raises APIError: _description_
-        :raises APIError: _description_
-        :return ReportNormals | None: _description_
+        :param str element_id: What element to get the report for
+        :param str period: period of the report
+        :param int station_id: station id to get the report for
+        :raises APIError: if the request fails
+        :return ReportNormals | None: Normals report object
         """
         parameters = {
             element_id: element_id,
@@ -710,7 +527,7 @@ class Frost(object):
                     "code": "Arguments validation error",
                     "message": e.json(),
                 }
-            )
+            ) from e
 
         # Convert the validated parameters to a dictionary
         settings = params.json(exclude_unset=True, by_alias=True)
@@ -726,7 +543,7 @@ class Frost(object):
                     "code": "Arguments validation error",
                     "message": e.json(),
                 }
-            )
+            ) from e
 
         report_normals = ReportNormals(data)
 
@@ -751,7 +568,7 @@ class Frost(object):
                     "code": "Arguments validation error",
                     "message": e.json(),
                 }
-            )
+            ) from e
 
         # Convert the validated parameters to a dictionary
         settings = params.json(exclude_unset=True, by_alias=True)
@@ -767,7 +584,7 @@ class Frost(object):
                     "code": "Arguments validation error",
                     "message": e.json(),
                 }
-            )
+            ) from e
 
         report_station_records = ReportStationRecords(data)
 
@@ -791,7 +608,7 @@ class Frost(object):
                     "code": "Arguments validation error",
                     "message": e.json(),
                 }
-            )
+            ) from e
 
         # Convert the validated parameters to a dictionary
         settings = params.json(exclude_unset=True, by_alias=True)
@@ -807,7 +624,7 @@ class Frost(object):
                     "code": "Arguments validation error",
                     "message": e.json(),
                 }
-            )
+            ) from e
 
         report_remperature_constants = ReportTemperatureConstants(data)
 
@@ -828,93 +645,44 @@ class Frost(object):
         specification of a report of this type.
         :return Any: _description_
         """
-        parameters: Dict[str, Union[str, int, List[int], ScaleType]] = {
+        parameters = {
             "station_id": station_id,
             "from_time": from_time,
             "to_time": to_time,
         }
 
-        if max_wind_speed != None:
+        if max_wind_speed is not None:
             parameters["Max_wind_speed"] = max_wind_speed
 
-        if months != None:
+        if months is not None:
             parameters["Months"] = months
 
-        if scale != None:
+        if scale is not None:
             parameters["Scale"] = scale
 
-        try:
-            # Validate the arguments
-            params = ReportWindroseRequest(**parameters)
-        except ValidationError as e:
-            # Handle the validation error
-            raise APIError(
-                {
-                    "code": "Arguments validation error",
-                    "message": e.json(),
-                }
-            )
-
-        # Convert the validated parameters to a dictionary
-        settings = params.json(exclude_unset=True, by_alias=True)
-
-        report = self.get_report("windrose", settings)
-
-        try:
-            data = ReportWindroseResponse.parse_obj(report)
-        except ValidationError as e:
-            # Handle the validation error
-            raise APIError(
-                {
-                    "code": "Arguments validation error",
-                    "message": e.json(),
-                }
-            )
-
-        reportWindrose = ReportWindrose(data)
-
-        return reportWindrose
-
-
-def get_reports_available(self, type: Optional[str] = None) -> Any:
-    """Get available reports from the Frost API
-
-    :return Any: _description_
-    """
-    parameters = {
-        "type": type,
-    }
-
-    try:
-        # Validate the arguments
-        params = ReportsAvailableRequest(**parameters)
-    except ValidationError as e:
-        # Handle the validation error
-        raise APIError(
-            {
-                "code": "Arguments validation error",
-                "message": e.json(),
-            }
+        return self.get_report(
+            "WindRose",
+            ReportWindroseRequest,
+            ReportWindroseResponse,
+            ReportWindrose,
+            parameters,
         )
 
-    parameters_dict = params.dict(exclude_unset=True, by_alias=True)
+    def get_reports_available(
+        self, type: Optional[str] = None
+    ) -> ReportsAvailable | None:
+        """Get available reports from the Frost API
 
-    data = self.make_request("reports/available", parameters)
+        :return Any: _description_
+        """
+        parameters = {
+            "type": type,
+        }
 
-    if data == None:
-        return None
-
-    try:
-        validated_data = ReportsAvailableResponse.parse_obj(data)
-    except ValidationError as e:
-        # Handle the validation error
-        raise APIError(
-            {
-                "code": "Arguments validation error",
-                "message": e.json(),
-            }
+        return self.validate_request_and_response(
+            "reports/available",
+            ReportsAvailableRequest,
+            parameters,
+            ReportsAvailableResponse,
+            ReportsAvailable,
         )
-
-    reports_available = ReportsAvailable(validated_data)
-
-    return reports_available

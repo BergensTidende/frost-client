@@ -1,65 +1,105 @@
 from __future__ import annotations
 
-from typing import Any, List
+from typing import List
 
-import pandas as pd
+from pydantic import BaseModel, field_validator
 
-from frost.api import IdfResponse
-from frost.models import ApiBase
-from frost.utils.dataframes import safe_parse_date
-
-# from frost.types import FrostObservationsResponse
+from frost.utils.validation import validate_wkt
 
 
-class Idf(ApiBase):
-    data: IdfResponse
+class IdfRequest(BaseModel):
+    sources: str
+    location: str
+    durations: str
+    frequencies: str
+    unit: str
 
-    def __init__(
-        self,
-        data: IdfResponse,
-    ) -> None:
-        """
-        Initialize a response class
+    @field_validator("sources")
+    @classmethod
+    def sources_must_be_valid(cls, v: str):
+        if v == "grid":
+            return v
 
-        :param list series_json: List of data elements
-        :param SourceResponse sources: Optional instance of sources response
+        station_ids = v.split(",")
+        station_ids = [station_id.strip() for station_id in station_ids]
 
-        """
-        self.data = data
-        self.date_columns = []
-        self.compact_columns = [
-            "stationId",
-            "sourceId",
-            "validFrom",
-            "timeOffset",
-            "timeResolution",
-            "elementId",
-            "unit",
-        ]
+        # Check if the input is a list of integers
+        if not all(station_id.isdigit() for station_id in station_ids):
+            raise ValueError(
+                """sources must be 'grid' or a comma-separated
+                list of staion IDs (integers)"""
+            )
 
-    def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
-        """Normalizes the JSON data into a dataframe. This method must be implemented
-        in child classes because the JSON structure is different for each endpoint.
+        return v
 
-        :return pd.DataFrame: the dataframe after normalization
-        """
-        tseries = self.data["tseries"]
-        if not tseries:
-            return pd.DataFrame()
+    @field_validator("location")
+    @classmethod
+    def location_must_be_valid(cls, v: str):
+        if validate_wkt(v):
+            return v
+        else:
+            raise ValueError(
+                "Location must be format POINT(<longitude degrees> <latitude degrees>)."
+            )
 
-        df = pd.DataFrame(tseries)
+    @field_validator("durations")
+    @classmethod
+    def validate_durations(cls, v: str):
+        # Check if the input is a single or list of integers
+        if not v:
+            return v
+        durations = v.split(",")
+        if not all(duration.isdigit() for duration in durations):
+            raise ValueError("Durations must be a comma-separated list of integers")
 
-        if df.empty:
-            return df
+        return v
 
-        df = df.reset_index()
+    @field_validator("frequencies")
+    @classmethod
+    def validate_frequencies(cls, v: str):
+        if not v:
+            return v
+        # Check if the input is a single or list of integers
+        frequencies = v.split(",")
+        if not all(frequency.isdigit() for frequency in frequencies):
+            raise ValueError("Frequencies must be a comma-separated list of integers")
 
-        return df
+        return v
 
-    def to_list(self) -> List[Any]:
-        """Returns the sources as a Python list of dicts"""
-        return self.data
+    @field_validator("unit")
+    @classmethod
+    def validate_unit(cls, v: str):
+        if not v:
+            return v
+        if v in {"mm", "lsha"}:
+            return v
+        else:
+            raise ValueError("Unit must be 'mm' or 'lsha'")
 
-    def get_ualf(self) -> str:
-        """Returns data as text"""
-        return self.data
+
+class SpatialExtent(BaseModel):
+    bottom: int
+    left: int
+    right: int
+    top: int
+
+
+class Value(BaseModel):
+    duration: int
+    frequency: int
+    intensity: int
+    lowerinterval: int
+    upperinterval: int
+
+
+class Source(BaseModel):
+    masl: int
+    sourceID: str
+    spatialExtent: SpatialExtent
+    updatedAt: str
+    values: List[Value]
+
+
+class IdfResponse(BaseModel):
+    sources: List[Source]
+    unit: str

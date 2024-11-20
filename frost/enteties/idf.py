@@ -1,34 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, List
+from typing import List
 
 import pandas as pd
 
-from frost.api import ReportHumidityConstantsResponse
+from frost.api import IdfResponse
 from frost.models import ApiBase
-from frost.utils.dataframes import safe_parse_date
-
-# from frost.types import FrostObservationsResponse
 
 
-class ReportHumidityConstants(ApiBase):
-    data: ReportHumidityConstantsResponse
-
-    def __init__(
-        self,
-        data: ReportHumidityConstantsResponse,
-    ) -> None:
-        """
-        Initialize a response class
-
-        :param list series_json: List of data elements
-        :param SourceResponse sources: Optional instance of sources response
-
-        """
-        self.data = data
-        self.date_columns = ["Epoch"]
-        self.compact_columns = []
-
+class Idf(ApiBase[IdfResponse]):
     def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
         """Normalizes the JSON data into a dataframe. This method must be implemented
         in child classes because the JSON structure is different for each endpoint.
@@ -48,6 +28,10 @@ class ReportHumidityConstants(ApiBase):
 
         return df
 
-    def to_list(self) -> List[Any]:
+    def to_list(self) -> List[str]:
         """Returns the sources as a Python list of dicts"""
+        return self.data
+
+    def get_ualf(self) -> str:
+        """Returns data as text"""
         return self.data

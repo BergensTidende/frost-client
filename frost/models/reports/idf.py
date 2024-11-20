@@ -1,8 +1,6 @@
 from typing import List
 
-from pydantic import BaseModel, field_validator, Field
-
-from .reports import ReportResponse
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
 
 
 class ReportIdfRequest(BaseModel):
@@ -13,18 +11,21 @@ class ReportIdfRequest(BaseModel):
         populate_by_name = True
 
     @field_validator("station_id")
-    def check_required_fields(cls, value, field):
+    @classmethod
+    def check_required_fields(cls, value: str, field: ValidationInfo):
         if value is None:
             raise ValueError(f"{field.name} must be provided")
         return value
 
     @field_validator("unit")
-    def check_valid_unit(cls, values):
-        if values not in ["mm", "mm/h", "mm/24h", "mm/48h", "mm/72h"]:
+    @classmethod
+    def check_valid_unit(cls, values: str):
+        if values in {"mm", "mm/h", "mm/24h", "mm/48h", "mm/72h"}:
+            return values
+        else:
             raise ValueError(
                 "Unit must be one of 'mm', 'mm/h', 'mm/24h', 'mm/48h', 'mm/72h'"
             )
-        return values
 
 
 class Values(BaseModel):

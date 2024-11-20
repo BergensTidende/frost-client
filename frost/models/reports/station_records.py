@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, field_validator, Field
+from pydantic import BaseModel, Field, field_validator, ValidationInfo
 
 
 class ReportStationRecordsRequest(BaseModel):
@@ -11,7 +11,8 @@ class ReportStationRecordsRequest(BaseModel):
         populate_by_name = True
 
     @field_validator("station_id", "record_category")
-    def check_required_fields(cls, value, field):
+    @classmethod
+    def check_required_fields(cls, value: str, field: ValidationInfo):
         if value is None:
             raise ValueError(f"{field.name} must be provided")
         return value
