@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, RootModel, field_validator, ValidationInfo
+from pydantic import BaseModel, Field, RootModel, ValidationInfo, field_validator
 
 from frost.utils.validation import validate_time_range, validate_wkt
 

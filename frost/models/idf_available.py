@@ -1,6 +1,6 @@
 from typing import List
 
-from pydantic import BaseModel, field_validator, ValidationInfo
+from pydantic import BaseModel, ValidationInfo, field_validator
 
 
 class IdfAvailableRequest(BaseModel):

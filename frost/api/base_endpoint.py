@@ -1,7 +1,8 @@
-from frost.client.exceptions import APIError
-
 from typing import Type
+
 from pydantic import BaseModel, ValidationError
+
+from frost.client.exceptions import APIError
 
 
 class BaseEndpoint:

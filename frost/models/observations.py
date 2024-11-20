@@ -2,7 +2,7 @@ import json
 import re
 from typing import List
 
-from pydantic import BaseModel, Field, field_validator, ValidationInfo
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 from frost.utils.validation import validate_nearest
 

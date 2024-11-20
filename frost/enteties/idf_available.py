@@ -4,11 +4,11 @@ from typing import List
 
 import pandas as pd
 
+from frost.enteties import BaseEntity
 from frost.models import IdfAvailableResponse
-from frost.api import ApiBase
 
 
-class IdfAvailable(ApiBase[IdfAvailableResponse]):
+class IdfAvailable(BaseEntity[IdfAvailableResponse]):
     def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
         """Normalizes the JSON data into a dataframe. This method must be implemented
         in child classes because the JSON structure is different for each endpoint.

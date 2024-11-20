@@ -4,11 +4,11 @@ from typing import List
 
 import pandas as pd
 
-from frost.api import ReportWindroseResponse
-from frost.models import ApiBase
+from frost.enteties import BaseEntity
+from frost.models import ReportWindroseResponse
 
 
-class ReportWindrose(ApiBase[ReportWindroseResponse]):
+class ReportWindrose(BaseEntity[ReportWindroseResponse]):
     def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
         """Normalizes the JSON data into a dataframe. This method must be implemented
         in child classes because the JSON structure is different for each endpoint.
@@ -34,14 +34,16 @@ class ReportWindrose(ApiBase[ReportWindroseResponse]):
 
     def get_metadata(self) -> dict:
         """Returns the metadata as a Python dictionary"""
-        return self.data.metadata.dict()
+        return {} if self.data is None else self.data.metadata.dict()
 
     def get_extras(self) -> List[dict]:
         """Returns the extras as a Python list of dicts"""
-        return self.data.extras
+        return [] if self.data is None else self.data.extras
 
     def get_windspeeds(self) -> dict[str, float]:
         """Returns the windspeeds as a Python dictionary"""
+        if self.data is None:
+            return {}
         data = dict(zip(self.data.vertical_axis.titles, self.data.vertical_axis.sums))
 
         return data
@@ -49,6 +51,8 @@ class ReportWindrose(ApiBase[ReportWindroseResponse]):
     def get_winddirections(self) -> dict:
         """Returns the winddirections as a Python dictionary"""
 
+        if self.data is None:
+            return {}
         data = dict(
             zip(self.data.horizontal_axis.titles, self.data.horizontal_axis.sums)
         )
@@ -60,4 +64,4 @@ class ReportWindrose(ApiBase[ReportWindroseResponse]):
 
     def to_list(self) -> List[str]:
         """Returns the sources as a Python list of dicts"""
-        return self.data
+        return [] if self.data is None else self.data

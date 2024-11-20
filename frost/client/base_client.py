@@ -1,8 +1,10 @@
-import requests
 from os import getenv
 from urllib.parse import urljoin
 
-from frost.client.exceptions import APIError
+import requests
+
+from frost.client import APIError
+
 
 class BaseClient:
     def __init__(self, client_id=None, client_secret=None):

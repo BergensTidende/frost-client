@@ -1,10 +1,10 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, Field, validator, ValidationInfo
+from pydantic import BaseModel, Field, ValidationInfo, validator
 
 from frost.utils.validation import validate_time
 
-from .reports import ScaleType
+from .report import ScaleType
 
 
 class ReportWindroseRequest(BaseModel):

@@ -10,7 +10,7 @@ from frost.utils.dataframes import convert_date_columns
 T = TypeVar("T")
 
 
-class ApiBase(Generic[T]):
+class BaseEntity(Generic[T]):
     data: Optional[T] = None
     date_columns: List[str] = []
     compact_columns: List[str] = []

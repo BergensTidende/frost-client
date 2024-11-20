@@ -4,11 +4,11 @@ from typing import List
 
 import pandas as pd
 
-from frost.api import ApiBase
-from frost.models import LightningResponse, LightningRequest
+from frost.enteties.base_entity import BaseEntity
+from frost.models import LightningResponse
 
 
-class Lightning(ApiBase[LightningResponse]):
+class Lightning(BaseEntity[LightningResponse]):
     date_columns = ["Epoch"]
 
     def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
@@ -17,7 +17,9 @@ class Lightning(ApiBase[LightningResponse]):
 
         :return pd.DataFrame: the dataframe after normalization
         """
-        tseries = self.data["tseries"]
+        if self.data is None:
+            return pd.DataFrame()
+        tseries = self.data.get("tseries", [])
         if not tseries:
             return pd.DataFrame()
 
@@ -32,43 +34,8 @@ class Lightning(ApiBase[LightningResponse]):
 
     def to_list(self) -> List[str]:
         """Returns the sources as a Python list of dicts"""
-        return self.data
+        return self.data if self.data is not None else []
 
     def get_ualf(self) -> str:
         """Returns data as text"""
-        return self.data
-
-    def get_lightning(
-        self,
-        reference_time: str = "latest",
-        format: str = "json",
-        geometry: Optional[str] = None,
-    ) -> Lightning | None:
-        """Get lightning data, very very frightening
-        Get lightning data from the MET Norway's data storage systems. The query
-        parameters act as a filter; if all were left blank (not allowed in practice),
-        one would retrieve all of the lightning data in the system.
-        Restrict the data using the query parameters.
-
-        :param str referenceTime: The time range to get observations for in either
-                                  extended ISO-8601 format or the single word 'latest'.
-        :param str format: the return format. Either json or ualf, defaults to "json"
-        :param Optional[str] geometry: Get lightning within a polygon specified as
-        POLYGON(...) using WKT; Example: POLYGON((4 60, 4 59, 6 59, 6 60, 4 60)),
-        defaults to None
-
-        :return Any: A list of lightning data
-        """
-        parameters = {
-            "reference_time": reference_time,
-            "format": format,
-            "geometry": geometry,
-        }
-
-        return self.validate_request_and_response(
-            "lightning",
-            LightningRequest,
-            LightningResponse,
-            Lightning,
-            parameters,
-        )
+        return self.data if self.data is not None else ""

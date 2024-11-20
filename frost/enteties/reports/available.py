@@ -4,11 +4,11 @@ from typing import List
 
 import pandas as pd
 
-from frost.api import ReportsAvailableResponse
-from frost.models import ApiBase
+from frost.enteties import BaseEntity
+from frost.models import ReportsAvailableResponse
 
 
-class ReportsAvailable(ApiBase[ReportsAvailableResponse]):
+class ReportsAvailable(BaseEntity[ReportsAvailableResponse]):
     def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
         """Normalizes the JSON data into a dataframe. This method must be implemented
         in child classes because the JSON structure is different for each endpoint.
@@ -30,4 +30,4 @@ class ReportsAvailable(ApiBase[ReportsAvailableResponse]):
 
     def to_list(self) -> List[str]:
         """Returns the sources as a Python list of dicts"""
-        return self.data
+        return [] if self.data is None else list(map(str, self.data))
