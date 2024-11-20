@@ -1,7 +1,8 @@
 from enum import Enum
 from typing import Generic, Optional, TypeVar
 
-from pydantic import BaseModel, ValidationInfo, field_validator
+from pydantic import BaseModel, ValidationInfo
+from pydantic.class_validators import field_validator
 
 DataT = TypeVar("DataT")
 
@@ -22,7 +23,7 @@ class ReportRequest(BaseModel):
 
     @field_validator("type", "settings")
     @classmethod
-    def check_required_fields(cls, value: str, info: ValidationInfo):
+    def check_required_fields(cls, value: str, info: ValidationInfo) -> str:
         if value is None:
             raise ValueError(f"{info.field_name} must be provided")
 

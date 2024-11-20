@@ -1,13 +1,21 @@
+from typing import Any, Type
+
 from frost.api import BaseReportEndpoint
+from frost.client import BaseClient
 from frost.entities import ReportWindrose
 from frost.models import ReportWindroseRequest, ReportWindroseResponse
 
 
-class ReportWindroseEndpoint(BaseReportEndpoint):
-    request_model = ReportWindroseRequest
-    response_model = ReportWindroseResponse
-    report_type = "Windrose"
+class ReportWindroseEndpoint(
+    BaseReportEndpoint[ReportWindroseRequest, ReportWindroseResponse]
+):
+    request_model: Type[ReportWindroseRequest] = ReportWindroseRequest
+    response_model: Type[ReportWindroseRequest] = ReportWindroseResponse
+    report_type: str = "Windrose"
 
-    def get_report_windrose(self, **kwargs):
-        response_data = self.get_data(**kwargs)
+    def __init__(self, client: BaseClient) -> None:
+        super().__init__(client)
+
+    def get_report_windrose(self, **kwargs: Any) -> ReportWindrose:
+        response_data: ReportWindroseResponse = self.get_data(**kwargs)
         return ReportWindrose(response_data)

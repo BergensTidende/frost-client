@@ -49,8 +49,6 @@ def safe_parse_date(  # type: ignore[no-any-unimported]
     date_str: str,
 ) -> pd.Timestamp | None:
 
-    if date_str is None:
-        return None
     try:
         # Try to convert normally first
         fixed_date = pd.to_datetime(date_str)
@@ -65,16 +63,4 @@ def safe_parse_date(  # type: ignore[no-any-unimported]
 
         return fixed_date
     except Exception:
-        # If out of bounds, replace with a high but valid timestamp or None
-
-        fallback_date = pd.to_datetime(
-            "2262-04-11", format="%Y-%m-%d"
-        )  # or pd.NaT, or None
-        if fallback_date.tz is None:
-            # If tz-naive, localize to "Europe/Oslo"
-            fallback_date = fallback_date.tz_localize("Europe/Oslo")
-        else:
-            # If already tz-aware, convert to "Europe/Oslo"
-            fallback_date = fallback_date.tz_convert("Europe/Oslo")
-
-        return fallback_date
+        return None

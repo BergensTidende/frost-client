@@ -37,7 +37,8 @@ class FrostClient(BaseClient):
     """Client for interacting with the Frost API.
 
     This class provides methods to retrieve observations from the Frost API.
-    It serves as a wrapper around the ObservationsEndpoint, allowing users to easily make API calls to fetch observations.
+    It serves as a wrapper around the ObservationsEndpoint, allowing users to easily
+    make API calls to fetch observations.
 
     Args:
         **kwargs: Additional keyword arguments to customize the API request.

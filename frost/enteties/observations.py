@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List
 
 import pandas as pd
 
 from frost.enteties import BaseEntity
 from frost.models import ObservationsResponse
-from frost.utils.arrays import array_to_param
 from frost.utils.dataframes import safe_parse_date
 
 

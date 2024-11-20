@@ -20,7 +20,7 @@ def array_to_param(param: str | List[str] | None) -> str | None:
 
     _param = param if type(param) is str else ""
 
-    if type(param) == list:
+    if isinstance(param, list):
         for _p in param:
             _p = _p.strip()
 
