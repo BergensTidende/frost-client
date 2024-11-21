@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 
 from pydantic import BaseModel, ValidationInfo, field_validator
@@ -8,7 +10,7 @@ class IdfAvailableRequest(BaseModel):
 
     @field_validator("sources")
     @classmethod
-    def sources_must_be_valid(cls, v: str, info: ValidationInfo):
+    def sources_must_be_valid(cls, v: str, info: ValidationInfo) -> str:
         if v == "grid":
             return v
 

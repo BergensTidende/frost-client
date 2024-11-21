@@ -43,7 +43,7 @@ def validate_wkt(v: str) -> bool:
 
 
 def validate_time(
-    v: str, fieldname: str, allowed_keywords: Optional[str | List[str]] = None
+    v: str, fieldname: Optional[str], allowed_keywords: Optional[str | List[str]] = None
 ) -> str:
     # Regular expression for the time format
     time_pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"

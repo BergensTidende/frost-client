@@ -3,7 +3,7 @@ from typing import List, Optional
 import pandas as pd
 
 
-def convert_date_columns(  # type: ignore[no-any-unimported]
+def convert_date_columns(
     df: pd.DataFrame, date_columns: Optional[List[str]] = None
 ) -> pd.DataFrame:
     """The `convert_date_columns` function converts specified date
@@ -33,7 +33,7 @@ def convert_date_columns(  # type: ignore[no-any-unimported]
     return df
 
 
-def create_station_id_column(  # type: ignore[no-any-unimported]
+def create_station_id_column(
     df: pd.DataFrame,
 ) -> pd.DataFrame:
     """Creates a new column in a DataFrame with the station ID based on the source ID.
@@ -45,7 +45,7 @@ def create_station_id_column(  # type: ignore[no-any-unimported]
     return df
 
 
-def safe_parse_date(  # type: ignore[no-any-unimported]
+def safe_parse_date(
     date_str: str,
 ) -> pd.Timestamp | None:
 

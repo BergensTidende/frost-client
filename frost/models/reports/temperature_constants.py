@@ -1,15 +1,17 @@
+from __future__ import annotations
+
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 
 class ReportTemperatureConstantsRequest(BaseModel):
-    station_id: int = Field(None, alias="StationID")
+    station_id: int = Field(..., alias="StationID")
 
     class Config:
         populate_by_name = True
 
     @field_validator("station_id")
     @classmethod
-    def check_required_fields(cls, value: str, info: ValidationInfo):
+    def check_required_fields(cls, value: str, info: ValidationInfo) -> str:
         if value is None:
             raise ValueError(f"{info.field_name} must be provided")
         return value

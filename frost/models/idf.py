@@ -16,7 +16,7 @@ class IdfRequest(BaseModel):
 
     @field_validator("sources")
     @classmethod
-    def sources_must_be_valid(cls, v: str):
+    def sources_must_be_valid(cls, v: str) -> str:
         if v == "grid":
             return v
 
@@ -34,7 +34,7 @@ class IdfRequest(BaseModel):
 
     @field_validator("location")
     @classmethod
-    def location_must_be_valid(cls, v: str):
+    def location_must_be_valid(cls, v: str) -> str:
         if validate_wkt(v):
             return v
         else:
@@ -44,7 +44,7 @@ class IdfRequest(BaseModel):
 
     @field_validator("durations")
     @classmethod
-    def validate_durations(cls, v: str):
+    def validate_durations(cls, v: str) -> str:
         # Check if the input is a single or list of integers
         if not v:
             return v
@@ -56,7 +56,7 @@ class IdfRequest(BaseModel):
 
     @field_validator("frequencies")
     @classmethod
-    def validate_frequencies(cls, v: str):
+    def validate_frequencies(cls, v: str) -> str:
         if not v:
             return v
         # Check if the input is a single or list of integers
@@ -68,7 +68,7 @@ class IdfRequest(BaseModel):
 
     @field_validator("unit")
     @classmethod
-    def validate_unit(cls, v: str):
+    def validate_unit(cls, v: str) -> str:
         if not v:
             return v
         if v in {"mm", "lsha"}:

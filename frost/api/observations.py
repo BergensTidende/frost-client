@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from frost.api import BaseEndpoint
 from frost.client import BaseClient
-from frost.entities import Observations
 from frost.models import ObservationsRequest, ObservationsResponse
+
+if TYPE_CHECKING:
+    from frost.entities import Observations
 
 
 class ObservationsEndpoint(BaseEndpoint):

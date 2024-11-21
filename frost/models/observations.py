@@ -21,14 +21,14 @@ class ObservationsRequest(BaseModel):
 
     @field_validator("include_observations", "time")
     @classmethod
-    def check_required_fields(cls, value: str, field: ValidationInfo):
+    def check_required_fields(cls, value: str, field: ValidationInfo) -> str:
         if value is None:
             raise ValueError(f"{field.name} must be provided")
         return value
 
     @field_validator("time")
     @classmethod
-    def time_must_be_valid(cls, v: str):
+    def time_must_be_valid(cls, v: str) -> str:
         # Regular expression for the time range format
         time_range_pattern = r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$"  # noqa: E501 # pylint: disable=line-too-lon
 
@@ -42,13 +42,15 @@ class ObservationsRequest(BaseModel):
 
     @field_validator("nearest")
     @classmethod
-    def validate_nearest(cls, v: str):
+    def validate_nearest(cls, v: str) -> str:
         if validate_nearest(v):
             return v
+        else:
+            raise ValueError("Invalid nearest value")
 
     @field_validator("polygon")
     @classmethod
-    def validate_polygon(cls, v: str):
+    def validate_polygon(cls, v: str) -> str:
         try:
             polygon_data = json.loads(v)
             if not isinstance(polygon_data, list):

@@ -15,7 +15,7 @@ from frost.api import (
     ReportWindroseEndpoint,
 )
 from frost.client import BaseClient
-from frost.enteties import (
+from frost.entities import (
     Idf,
     IdfAvailable,
     Lightning,
@@ -30,7 +30,7 @@ from frost.enteties import (
     ReportWindrose,
 )
 from frost.models import ScaleType
-from frost.utils.array import array_to_param
+from frost.utils.arrays import array_to_param
 
 
 class FrostClient(BaseClient):

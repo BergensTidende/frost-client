@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from frost.api.base_endpoint import BaseEndpoint
 from frost.client import BaseClient
-from frost.entities.lightning import Lightning
 from frost.models.lightning import LightningRequest, LightningResponse
+
+if TYPE_CHECKING:
+    from frost.entities import Lightning
 
 
 class LightningEndpoint(BaseEndpoint):

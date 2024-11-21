@@ -4,7 +4,7 @@ from typing import List
 
 import pandas as pd
 
-from frost.enteties import BaseEntity
+from frost.entities import BaseEntity
 from frost.models import ObservationsResponse
 from frost.utils.dataframes import safe_parse_date
 
@@ -12,7 +12,7 @@ from frost.utils.dataframes import safe_parse_date
 class Observations(BaseEntity[ObservationsResponse]):
     date_columns = ["referenceTime"]
 
-    def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
+    def normalize_json(self) -> pd.DataFrame:
         """Normalizes the JSON data into a dataframe. This method must be implemented
         in child classes because the JSON structure is different for each endpoint.
 
@@ -112,62 +112,38 @@ class Observations(BaseEntity[ObservationsResponse]):
         :return pd.DataFrame: the enriched dataframe
         """
 
-        # Util function to find matching location for each observation
-        # Step 2: Define a function to find the correct location based on time
-        # and stationid
         def find_location_for_station(
-            obs_time, station_id, station_locations
-        ) -> dict | None:
-            if obs_time.tzinfo is None:
-                obs_time = obs_time.tz_localize("Europe/Oslo")
-            elif str(obs_time.tzinfo) != "Europe/Oslo":
-                obs_time = obs_time.tz_convert("Europe/Oslo")
+            obs_time: pd.Timestamp, station_id: str, station_locations: dict
+        ) -> dict:
+            if obs_time.tzinfo is None or str(obs_time.tzinfo) != "Europe/Oslo":
+                obs_time = (
+                    obs_time.tz_localize("Europe/Oslo")
+                    if obs_time.tzinfo is None
+                    else obs_time.tz_convert("Europe/Oslo")
+                )
 
             locations = station_locations.get(station_id, [])
             for loc in locations:
-                # Handle None values by defining open-ended logic
                 if loc["from_time"] <= obs_time <= loc["to_time"]:
                     value = loc["value"]
-                    for key in [
-                        "latitude",
-                        "longitude",
-                        "elevation_masl_hs",
-                    ]:  # Assuming these are the keys returned by your function
-                        if key not in value:
-                            value[key] = None  # Initialize the columns to None
+                    return {
+                        key: value.get(key, None)
+                        for key in ["latitude", "longitude", "elevation_masl_hs"]
+                    }
 
-                    return value
-
-            return {
-                "latitude": None,
-                "longitude": None,
-                "elevation_masl_hs": None,
-            }
+            return {"latitude": None, "longitude": None, "elevation_masl_hs": None}
 
         station_locations = self.create_station_locations()
-
-        # Step 3: Process observations to enrich them with location data
-        # Assuming df_observations is your DataFrame containing observations
-        # including 'time' and 'stationid'
         df["referenceTime"] = pd.to_datetime(df["referenceTime"])
 
-        # Check if the datetime objects are tz-aware and convert or localize accordingly
-        def apply_find_location(row):
-            # Assuming 'station_locations' is accessible and contains location
-            # data mapped by stationId
-            location = find_location_for_station(
-                row["referenceTime"], row["stationId"], station_locations
-            )
-            return (
-                pd.Series(location)
-                if location
-                else pd.Series(
-                    {"latitude": None, "longitude": None, "elevation_masl_hs": None}
-                )
-            )
-
         df[["latitude", "longitude", "elevation_masl_hs"]] = df.apply(
-            apply_find_location, axis=1, result_type="expand"
+            lambda row: pd.Series(
+                find_location_for_station(
+                    row["referenceTime"], row["stationId"], station_locations
+                )
+            ),
+            axis=1,
+            result_type="expand",
         )
 
         return df

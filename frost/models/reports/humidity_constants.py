@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 
@@ -8,8 +10,7 @@ class ReportHumidityConstantsRequest(BaseModel):
         populate_by_name = True
 
     @field_validator("station_id")
-    @classmethod
-    def check_required_fields(cls, value: str, field: ValidationInfo):
+    def check_required_fields(cls, value: str, field: ValidationInfo) -> str:
         if value is None:
             raise ValueError(f"{field.name} must be provided")
         return value

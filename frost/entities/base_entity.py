@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pprint
-from typing import Generic, List, Optional, TypeVar
+from typing import Any, Generic, List, Optional, TypeVar
 
 import pandas as pd
 
@@ -22,7 +22,7 @@ class BaseEntity(Generic[T]):
         """Returns the string representation of the data"""
         return pprint.pformat(self.data)
 
-    def normalize_json(self) -> pd.DataFrame:  # type: ignore[no-any-unimported]
+    def normalize_json(self) -> pd.DataFrame:
         """Normalizes the JSON data into a dataframe. This method must be implemented
         in child classes because the JSON structure is different for each endpoint.
 
@@ -33,9 +33,7 @@ class BaseEntity(Generic[T]):
             "normalize_json method must be implemented in child classes"
         )
 
-    def to_df(  # type: ignore[no-any-unimported]
-        self, compact: bool = False
-    ) -> pd.DataFrame:
+    def to_df(self, compact: bool = False) -> pd.DataFrame:
         df = self.normalize_json()
         df = convert_date_columns(df, self.date_columns)
         # df = create_station_id_column(df)
@@ -43,8 +41,9 @@ class BaseEntity(Generic[T]):
         if compact:
             df = df[self.compact_columns].copy()
 
-        if isinstance(df, pd.Series):
-            df = df.to_frame()
+        # Ensure df is a DataFrame
+        if not isinstance(df, pd.DataFrame):
+            raise ValueError("Expected df to be a pandas DataFrame.")
 
         return df
 
@@ -55,27 +54,9 @@ class BaseEntity(Generic[T]):
 
         source_ids: List[str] = []
 
-        # Iterate over all items, checking the type based on the "tag"
-        # for item in self.data:
-        #     if isinstance(item, dict):
-        #         if item.get("tag") == "FrostSource" and "id" in item:
-        #             source_item = cast(FrostSource, item)
-        #             source_ids.append(source_item["id"].split(":")[0])
-        #     elif "sourceId" in item and item["sourceId"]:
-        #         response_item = cast(
-        #             Union[
-        #                 FrostRainfallIDFSource,
-        #                 FrostRainfallIDFResponse,
-        #                 FrostObservationsResponse,
-        #                 FrostObservationTimeSeriesResponse,
-        #             ],
-        #             item,
-        #         )
-        #         source_ids.append(response_item["sourceId"].split(":")[0])
-
         return list(set(source_ids))
 
-    def to_list(self) -> List[T]:
+    def to_list(self) -> List[Any]:
         """Returns the data as a Python list of dicts"""
         raise NotImplementedError("to_list method must be implemented in child classes")
 

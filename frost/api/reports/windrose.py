@@ -10,7 +10,7 @@ class ReportWindroseEndpoint(
     BaseReportEndpoint[ReportWindroseRequest, ReportWindroseResponse]
 ):
     request_model: Type[ReportWindroseRequest] = ReportWindroseRequest
-    response_model: Type[ReportWindroseRequest] = ReportWindroseResponse
+    response_model: Type[ReportWindroseResponse] = ReportWindroseResponse
     report_type: str = "Windrose"
 
     def __init__(self, client: BaseClient) -> None:

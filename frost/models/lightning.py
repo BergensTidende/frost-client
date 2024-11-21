@@ -1,10 +1,12 @@
-from typing import List, Optional
+from __future__ import annotations
 
-from pydantic import BaseModel, Field, RootModel, ValidationInfo, field_validator
+from typing import Any, List, Optional
+
+from pydantic import BaseModel, Field, RootModel, field_validator
 
 from frost.utils.validation import validate_time_range, validate_wkt
 
-from .reports import FormatType
+from .report import FormatType
 
 
 class LightningRequest(BaseModel):
@@ -13,27 +15,28 @@ class LightningRequest(BaseModel):
     geometry: Optional[str] = None
 
     @field_validator("reference_time", "format")
-    @classmethod
-    def check_required_fields(cls, value: str, info: ValidationInfo):
+    def check_required_fields(cls, value: Any, info: Any) -> Any:
+        # 'info' is typed as 'Any' due to incomplete type hints in Pydantic
         if value is None:
-            raise ValueError(f"{info.field_name} must be provided")
+            field_name = getattr(info, "field_name", "unknown")
+            raise ValueError(f"{field_name} must be provided")
         return value
 
     @field_validator("reference_time")
-    @classmethod
-    def check_referencetime(cls, values: str, info: ValidationInfo):
-        return validate_time_range(values, info.field_name, "latest")
+    def check_referencetime(cls, value: str, info: Any) -> str:
+        # 'info' is typed as 'Any' due to incomplete type hints in Pydantic
+        field_name = getattr(info, "field_name", "")
+        return validate_time_range(value, field_name, "latest")
 
     @field_validator("geometry")
-    @classmethod
-    def check_geoemtry(cls, values: str, info: ValidationInfo):
-        if values is not None:
-            if validate_wkt(values):
-                return values
-            else:
-                raise ValueError(f"{info.field_name} must be a WKT-string")
-
-        return values
+    def check_geometry(cls, value: Optional[str], info: Any) -> Optional[str]:
+        # 'info' is typed as 'Any' due to incomplete type hints in Pydantic
+        if value is not None:
+            if validate_wkt(value):
+                return value
+            field_name = getattr(info, "field_name", "unknown")
+            raise ValueError(f"{field_name} must be a WKT-string")
+        return value
 
 
 class LightningItem(BaseModel):

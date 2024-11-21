@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import List
 
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
@@ -11,15 +13,13 @@ class ReportIdfRequest(BaseModel):
         populate_by_name = True
 
     @field_validator("station_id")
-    @classmethod
-    def check_required_fields(cls, value: str, field: ValidationInfo):
+    def check_required_fields(cls, value: str, field: ValidationInfo) -> str:
         if value is None:
             raise ValueError(f"{field.name} must be provided")
         return value
 
     @field_validator("unit")
-    @classmethod
-    def check_valid_unit(cls, values: str):
+    def check_valid_unit(cls, values: str) -> str:
         if values in {"mm", "mm/h", "mm/24h", "mm/48h", "mm/72h"}:
             return values
         else:

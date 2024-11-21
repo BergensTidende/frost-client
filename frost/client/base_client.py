@@ -6,7 +6,7 @@ from urllib.parse import urljoin
 
 import requests
 
-from frost.client import APIError
+from frost.errors.exceptions import APIError
 
 
 class BaseClient:

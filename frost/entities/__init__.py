@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from .base_entity import BaseEntity
 from .idf import Idf
 from .idf_available import IdfAvailable

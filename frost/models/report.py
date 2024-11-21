@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 from enum import Enum
 from typing import Generic, Optional, TypeVar
 
-from pydantic import BaseModel, ValidationInfo
-from pydantic.class_validators import field_validator
+from pydantic import BaseModel, ValidationInfo, field_validator
 
 DataT = TypeVar("DataT")
 
