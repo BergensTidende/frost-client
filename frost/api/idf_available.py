@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any, Optional
 
 from frost.api.base_endpoint import BaseEndpoint
 from frost.client import BaseClient
+from frost.entities import IdfAvailable
 from frost.models import IdfAvailableRequest, IdfAvailableResponse
 
-if TYPE_CHECKING:
-    from frost.entities import IdfAvailable
 
-
-class IdfAvailableEndpoint(BaseEndpoint):
+class IdfAvailableEndpoint(BaseEndpoint[IdfAvailableRequest, IdfAvailableResponse]):
     request_model = IdfAvailableRequest
     response_model = IdfAvailableResponse
     endpoint = "idf/available"
@@ -19,5 +17,14 @@ class IdfAvailableEndpoint(BaseEndpoint):
         super().__init__(client)
 
     def get_idf_available(self, **kwargs: Any) -> Optional["IdfAvailable"]:
+        kwargs["format"] = "json"
         response_data = self.get_data(**kwargs)
+
+        if not response_data:
+            print("No IdfAvailable data available")
+            return None
+
+        if isinstance(response_data, str):
+            raise ValueError("Unexpected text response in IdfAvailableEndpoint")
+
         return IdfAvailable(response_data)

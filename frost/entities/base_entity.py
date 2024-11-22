@@ -36,7 +36,6 @@ class BaseEntity(Generic[T]):
     def to_df(self, compact: bool = False) -> pd.DataFrame:
         df = self.normalize_json()
         df = convert_date_columns(df, self.date_columns)
-        # df = create_station_id_column(df)
 
         if compact:
             df = df[self.compact_columns].copy()

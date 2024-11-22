@@ -124,12 +124,21 @@ class Observations(BaseEntity[ObservationsResponse]):
 
             locations = station_locations.get(station_id, [])
             for loc in locations:
-                if loc["from_time"] <= obs_time <= loc["to_time"]:
+                from_time = loc["from_time"]
+                to_time = loc["to_time"]
+                if (from_time is None or from_time <= obs_time) and (
+                    to_time is None or obs_time <= to_time
+                ):
                     value = loc["value"]
-                    return {
-                        key: value.get(key, None)
-                        for key in ["latitude", "longitude", "elevation_masl_hs"]
-                    }
+                    for key in [
+                        "latitude",
+                        "longitude",
+                        "elevation_masl_hs",
+                    ]:
+                        if key not in value:
+                            value[key] = None
+
+                    return value
 
             return {"latitude": None, "longitude": None, "elevation_masl_hs": None}
 

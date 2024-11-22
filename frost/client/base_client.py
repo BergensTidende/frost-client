@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 from os import getenv
-from typing import Any, Mapping, Optional
-from urllib.parse import urljoin
+from typing import Any, Optional
 
 import requests
 
@@ -34,14 +33,39 @@ class BaseClient:
 
         self.session.auth = (self.client_id, self.client_secret)
 
-    def make_request(self, endpoint: str, params: Mapping[str, Any]) -> Any:
-        url = urljoin(self.base_url, f"{endpoint}/get")
+    def make_request(self, endpoint: str, params: dict[str, Any]) -> Any:
+        print("Final request parameters:", params)
+
+        url = f"{self.base_url}{endpoint}/get"
         try:
             response = self.session.get(url, params=params, timeout=60)
             response.raise_for_status()
-            data: Mapping[str, Any] = response.json()
-            if "error" in data:
-                raise APIError(data["error"])
-            return data.get("data")
+
+            # Detect content type or format
+            if params.get("format") == "ualf" or response.headers.get(
+                "Content-Type", ""
+            ).startswith("text/"):
+                return response.text
+
+            # Handle JSON responses
+            if response.headers.get("Content-Type", "").startswith("application/json"):
+                try:
+                    data = response.json()
+                except ValueError:
+                    # JSON decoding failed (likely an empty page)
+                    return None
+
+                if isinstance(data, list):
+                    # Empty array returned by API
+                    return None
+                return data["data"] if "data" in data else data
+            # For unsupported content types, raise an error
+            raise APIError(
+                {
+                    "message": f"""Unsupported response format:
+                    {response.headers.get('Content-Type')}""",
+                }
+            )
+
         except requests.RequestException as e:
             raise APIError({"message": str(e)}) from e

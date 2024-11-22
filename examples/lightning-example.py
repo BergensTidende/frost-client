@@ -1,9 +1,7 @@
 from frost import Frost
 
 frost = Frost()
-obs = frost.get_observations(
-    station_ids="18700,50540", element_ids="air_temperature, wind_speed"
-)
+obs = frost.get_lightning(reference_time="latest", format="ualf")
 
 if obs is None:
     print("No observations")

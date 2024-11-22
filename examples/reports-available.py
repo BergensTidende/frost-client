@@ -1,9 +1,6 @@
-from frost.client import Frost, APIError
+from frost import Frost
 
 frost = Frost()
-report = frost.get_reports_available()
-if report:
+if report := frost.get_reports_available():
     print("Got report!")
     print(report.to_list())
-
-frost.

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Generic, Type, TypeVar
+from typing import Any, Dict, Generic, Type, TypeVar, Union
 
 from pydantic import BaseModel, ValidationError
 
@@ -43,7 +43,22 @@ class BaseEndpoint(Generic[RequestType, ResponseType]):
                 }
             ) from e
 
-    def get_data(self, **kwargs: Any) -> ResponseType:
-        params = self.validate_request(**kwargs)
-        response_json = self.client.make_request(self.endpoint, params)
-        return self.validate_response(response_json)
+    def get_data(self, **kwargs: Any) -> Union[ResponseType, str]:
+        # Map kwargs to aliases
+        model = self.request_model
+        aliased_kwargs = {
+            model.model_fields[field].alias or field: value
+            for field, value in kwargs.items()
+            if field in model.model_fields
+        }
+
+        params = self.validate_request(**aliased_kwargs)
+        response_data = self.client.make_request(self.endpoint, params)
+
+        # Return raw text if UALF format is requested
+        if params.get("format") == "ualf":
+            if not isinstance(response_data, str):
+                raise ValueError("Expected raw string for UALF format")
+            return response_data
+
+        return self.validate_response(response_data)
