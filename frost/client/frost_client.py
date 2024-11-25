@@ -9,7 +9,6 @@ from frost.api import (
     ReportHumidityConstantsEndpoint,
     ReportIdfEndpoint,
     ReportNormalsEndpoint,
-    ReportsAvailableEndpoint,
     ReportStationRecordsEndpoint,
     ReportTemperatureConstantsEndpoint,
     ReportWindroseEndpoint,
@@ -24,7 +23,6 @@ from frost.entities import (
     ReportHumidityConstants,
     ReportIdf,
     ReportNormals,
-    ReportsAvailable,
     ReportStationRecords,
     ReportTemperatureConstants,
     ReportWindrose,
@@ -112,7 +110,7 @@ class FrostClient(BaseClient):
             parameters["location"] = time
 
         if element_ids is not None:
-            parameters["elementids"] = array_to_param(element_ids)
+            parameters["element_ids"] = array_to_param(element_ids)
 
         if nearest is not None:
             parameters["nearest"] = nearest
@@ -359,17 +357,3 @@ class FrostClient(BaseClient):
 
         report_windrose_endpoint = ReportWindroseEndpoint(self)
         return report_windrose_endpoint.get_report_windrose(**parameters)
-
-    def get_reports_available(
-        self, type: Optional[str] = None
-    ) -> Optional[ReportsAvailable]:
-        """Get available reports from the Frost API
-
-        :return Any: _description_
-        """
-        parameters = {
-            "type": type,
-        }
-
-        reports_available_endpoint = ReportsAvailableEndpoint(self)
-        return reports_available_endpoint.get_reports_available(**parameters)

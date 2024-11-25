@@ -3,7 +3,6 @@ from .idf import Idf
 from .idf_available import IdfAvailable
 from .lightning import Lightning
 from .observations import Observations
-from .reports.available import ReportsAvailable
 from .reports.dut import ReportDut
 from .reports.humidity_constants import ReportHumidityConstants
 from .reports.idf import ReportIdf
@@ -18,7 +17,6 @@ __all__ = [
     "Lightning",
     "Idf",
     "IdfAvailable",
-    "ReportsAvailable",
     "ReportDut",
     "ReportHumidityConstants",
     "ReportIdf",

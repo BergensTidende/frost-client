@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Generic, Type, TypeVar, Union
+from typing import Any, Dict, Generic, Type, TypeVar, Union, cast
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, RootModel, ValidationError
 
 from frost.client import BaseClient
 from frost.errors import APIError
@@ -33,8 +33,15 @@ class BaseEndpoint(Generic[RequestType, ResponseType]):
             ) from e
 
     def validate_response(self, response_json: Any) -> ResponseType:
+        if response_json is None:
+            # Return an empty model instance
+            if issubclass(self.response_model, RootModel):
+                return cast(ResponseType, self.response_model.model_validate([]))
+            else:
+                return self.response_model()
         try:
-            return self.response_model(**response_json)
+            return self.response_model.model_validate(response_json)
+
         except ValidationError as e:
             raise APIError(
                 {
@@ -46,6 +53,7 @@ class BaseEndpoint(Generic[RequestType, ResponseType]):
     def get_data(self, **kwargs: Any) -> Union[ResponseType, str]:
         # Map kwargs to aliases
         model = self.request_model
+
         aliased_kwargs = {
             model.model_fields[field].alias or field: value
             for field, value in kwargs.items()

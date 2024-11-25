@@ -5,11 +5,6 @@ from .idf_available import IdfAvailableRequest, IdfAvailableResponse  # noqa: F4
 from .lightning import LightningRequest, LightningResponse  # noqa: F401
 from .observations import ObservationsRequest, ObservationsResponse  # noqa: F401
 from .report import ScaleType  # noqa: F401
-
-from .reports.available import (
-    ReportsAvailableRequest,
-    ReportsAvailableResponse,
-)  # noqa: F401
 from .reports.dut import ReportDutRequest, ReportDutResponse  # noqa: F401
 from .reports.humidity_constants import (
     ReportHumidityConstantsRequest,
@@ -39,8 +34,6 @@ __all__ = [
     "LightningResponse",
     "ObservationsRequest",
     "ObservationsResponse",
-    "ReportsAvailableRequest",
-    "ReportsAvailableResponse",
     "ReportDutRequest",
     "ReportDutResponse",
     "ReportHumidityConstantsRequest",

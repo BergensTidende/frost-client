@@ -34,9 +34,16 @@ class BaseClient:
         self.session.auth = (self.client_id, self.client_secret)
 
     def make_request(self, endpoint: str, params: dict[str, Any]) -> Any:
-        print("Final request parameters:", params)
+        # make sure that params are viable for the request
+        # transform boolean values to string
+        for key, value in params.items():
+            if isinstance(value, bool):
+                params[key] = str(value).lower()
+            if value is None:
+                del params[key]
 
         url = f"{self.base_url}{endpoint}/get"
+
         try:
             response = self.session.get(url, params=params, timeout=60)
             response.raise_for_status()
@@ -51,14 +58,13 @@ class BaseClient:
             if response.headers.get("Content-Type", "").startswith("application/json"):
                 try:
                     data = response.json()
+
                 except ValueError:
                     # JSON decoding failed (likely an empty page)
                     return None
 
-                if isinstance(data, list):
-                    # Empty array returned by API
-                    return None
                 return data["data"] if "data" in data else data
+
             # For unsupported content types, raise an error
             raise APIError(
                 {

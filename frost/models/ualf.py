@@ -6,57 +6,65 @@ class Ualf:
         self.read_ualf(ualf_coordinates)
 
     def read_ualf(self, ualf_coordinates: str) -> None:
-        _ualf_coordinates: list[str] = list(ualf_coordinates)
-        self.version = int(_ualf_coordinates[0])
-        self.year = int("".join(_ualf_coordinates[2:6]))
-        self.month = int("".join(_ualf_coordinates[7:10]))
-        self.day = int("".join(_ualf_coordinates[10:13]))
-        self.hour = int("".join(_ualf_coordinates[13:15]))
-        self.minutes = int("".join(_ualf_coordinates[15:18]))
-        self.seconds = int("".join(_ualf_coordinates[18:21]))
-        self.nanoseconds = int("".join(_ualf_coordinates[21:31]))
-        self.latitude = float("".join(_ualf_coordinates[31:39]))
-        self.longitude = float("".join(_ualf_coordinates[39:47]))
-        self.peak_current = int("".join(_ualf_coordinates[47:51]))
-        self.multiplicity = int("".join(_ualf_coordinates[51:53]))
-        self.number_of_sensors = int("".join(_ualf_coordinates[53:56]))
-        self.degrees_of_freedom = int("".join(_ualf_coordinates[56:59]))
-        self.ellipse_angle = float("".join(_ualf_coordinates[59:66]))
-        self.semi_major_axis = float("".join(_ualf_coordinates[66:71]))
-        self.semi_minor_axis = float("".join(_ualf_coordinates[71:75]))
-        self.chi_square_value = float("".join(_ualf_coordinates[76:81]))
-        self.rise_time = float("".join(_ualf_coordinates[81:86]))
-        self.peak_to_zero_time = float("".join(_ualf_coordinates[86:91]))
-        self.max_rate_of_rise = float("".join(_ualf_coordinates[91:96]))
-        self.cloud_indicator = int("".join(_ualf_coordinates[96:98]))
-        self.angle_indicator = int("".join(_ualf_coordinates[98:100]))
-        self.signal_indicator = int("".join(_ualf_coordinates[100:102]))
-        self.timing_indicator = int("".join(_ualf_coordinates[102:104]))
-        self.ualf_dict = self.make_ualf_dict()
+        tokens = ualf_coordinates.strip().split()
+
+        if len(tokens) < 25:
+            raise ValueError(
+                f"Incomplete UALF line: expected at least 25 fields, got {len(tokens)}"
+            )
+
+        try:
+            self.version = int(tokens[0])
+            self.year = int(tokens[1])
+            self.month = int(tokens[2])
+            self.day = int(tokens[3])
+            self.hour = int(tokens[4])
+            self.minutes = int(tokens[5])
+            self.seconds = int(tokens[6])
+            self.nanoseconds = int(tokens[7])
+            self.latitude = float(tokens[8])
+            self.longitude = float(tokens[9])
+            self.peak_current = int(tokens[10])
+            self.multiplicity = int(tokens[11])
+            self.number_of_sensors = int(tokens[12])
+            self.degrees_of_freedom = int(tokens[13])
+            self.ellipse_angle = float(tokens[14])
+            self.semi_major_axis = float(tokens[15])
+            self.semi_minor_axis = float(tokens[16])
+            self.chi_square_value = float(tokens[17])
+            self.rise_time = float(tokens[18])
+            self.peak_to_zero_time = float(tokens[19])
+            self.max_rate_of_rise = float(tokens[20])
+            self.cloud_indicator = int(tokens[21])
+            self.angle_indicator = int(tokens[22])
+            self.signal_indicator = int(tokens[23])
+            self.timing_indicator = int(tokens[24])
+            self.ualf_dict = self.make_ualf_dict()
+        except (ValueError, IndexError) as e:
+            raise ValueError(
+                f"Error parsing UALF line: {ualf_coordinates}, Error: {e}"
+            ) from e
 
     def make_ualf_dict(self) -> Dict[str, Any]:
+        # Construct Epoch as ISO-8601 string with nanosecond precision
+        epoch = f"{self.year:04}-{self.month:02}-{self.day:02}T{self.hour:02}:{self.minutes:02}:{self.seconds:02}.{self.nanoseconds:09}Z"  # noqa: E501
+        point = [self.latitude, self.longitude]
         return {
-            "version": self.version,
-            "year": self.year,
-            "month": self.month,
-            "day": self.day,
-            "hour": self.hour,
-            "minutes": self.minutes,
-            "seconds": self.seconds,
-            "nanoseconds": self.nanoseconds,
-            "latitude": self.latitude,
-            "longitude": self.longitude,
+            "Epoch": epoch,
+            "Point": point,
+            "CloudIndicator": self.cloud_indicator,
             "peak_current": self.peak_current,
-            "multiplicity": self.multiplicity,
+            "Multiplicity": self.multiplicity,
             "number_of_sensors": self.number_of_sensors,
             "degrees_of_freedom": self.degrees_of_freedom,
+            "ellipse_angle": self.ellipse_angle,
             "semi_major_axis": self.semi_major_axis,
             "semi_minor_axis": self.semi_minor_axis,
             "chi_square_value": self.chi_square_value,
             "rise_time": self.rise_time,
             "peak_to_zero_time": self.peak_to_zero_time,
             "max_rate_of_rise": self.max_rate_of_rise,
-            "cloud_indicator": self.cloud_indicator,
+            "angle_indicator": self.angle_indicator,
             "signal_indicator": self.signal_indicator,
             "timing_indicator": self.timing_indicator,
         }

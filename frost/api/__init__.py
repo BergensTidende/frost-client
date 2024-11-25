@@ -5,7 +5,6 @@ from .idf import IdfEndpoint  # noqa: F401
 from .idf_available import IdfAvailableEndpoint  # noqa: F401
 from .lightning import LightningEndpoint  # noqa: F401
 from .observations import ObservationsEndpoint  # noqa: F401
-from .reports.available import ReportsAvailableEndpoint  # noqa: F401
 from .reports.base_report_endpoint import BaseReportEndpoint  # noqa: F401
 from .reports.dut import ReportDutEndpoint  # noqa: F401
 from .reports.humidity_constants import ReportHumidityConstantsEndpoint  # noqa: F401
@@ -31,5 +30,4 @@ __all__ = [
     "ReportStationRecordsEndpoint",
     "ReportTemperatureConstantsEndpoint",
     "ReportWindroseEndpoint",
-    "ReportsAvailableEndpoint",
 ]

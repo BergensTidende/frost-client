@@ -35,23 +35,29 @@ class LightningItem(BaseModel):
     Epoch: str
     Point: List[float]
     CloudIndicator: int
-    PeakCurrentEstimate: int
+    PeakCurrentEstimate: int = Field(..., alias="peak_current")
     Multiplicity: int
-    SolutionNOfSensors: int
-    LocationDegreesOfFreedom: int
-    EllipseAngle: float
-    EllipseSemiMajorAxis: float
-    EllipseSemiMinorAxis: float
-    ChiSquare: float
-    RiseTime: float
-    PeakToZeroTime: float
-    MaxRateOfRise: float
-    AngleIndicator: int
-    SignalIndicator: int
-    TimingIndicator: int
+    SolutionNOfSensors: int = Field(..., alias="number_of_sensors")
+    LocationDegreesOfFreedom: int = Field(..., alias="degrees_of_freedom")
+    EllipseAngle: float = Field(..., alias="ellipse_angle")
+    EllipseSemiMajorAxis: float = Field(..., alias="semi_major_axis")
+    EllipseSemiMinorAxis: float = Field(..., alias="semi_minor_axis")
+    ChiSquare: float = Field(..., alias="chi_square_value")
+    RiseTime: float = Field(..., alias="rise_time")
+    PeakToZeroTime: float = Field(..., alias="peak_to_zero_time")
+    MaxRateOfRise: float = Field(..., alias="max_rate_of_rise")
+    AngleIndicator: int = Field(..., alias="angle_indicator")
+    SignalIndicator: int = Field(..., alias="signal_indicator")
+    TimingIndicator: int = Field(..., alias="timing_indicator")
+
+    class Config:
+        allow_population_by_alias = True
+        populate_by_name = True
 
 
-class LightningResponse(RootModel):
+class LightningResponse(RootModel[List[LightningItem]]):
+    pass
+
     @classmethod
     def from_ualf(cls, ualf_text: str) -> "LightningResponse":
         """
@@ -61,31 +67,15 @@ class LightningResponse(RootModel):
         items = []
 
         for line in lines:
+            if not line.strip():
+                continue  # Skip empty lines
+
             try:
                 ualf = Ualf(line)
                 parsed = ualf.parse()
-                items.append(
-                    LightningItem(
-                        Epoch=f"{parsed['year']}-{parsed['month']:02}-{parsed['day']:02}T{parsed['hour']:02}:{parsed['minutes']:02}:{parsed['seconds']:02}Z",  # noqa: E501
-                        Point=[parsed["latitude"], parsed["longitude"]],
-                        CloudIndicator=parsed["cloud_indicator"],
-                        PeakCurrentEstimate=parsed["peak_current"],
-                        Multiplicity=parsed["multiplicity"],
-                        SolutionNOfSensors=parsed["number_of_sensors"],
-                        LocationDegreesOfFreedom=parsed["degrees_of_freedom"],
-                        EllipseAngle=parsed["ellipse_angle"],
-                        EllipseSemiMajorAxis=parsed["semi_major_axis"],
-                        EllipseSemiMinorAxis=parsed["semi_minor_axis"],
-                        ChiSquare=parsed["chi_square_value"],
-                        RiseTime=parsed["rise_time"],
-                        PeakToZeroTime=parsed["peak_to_zero_time"],
-                        MaxRateOfRise=parsed["max_rate_of_rise"],
-                        AngleIndicator=parsed["angle_indicator"],
-                        SignalIndicator=parsed["signal_indicator"],
-                        TimingIndicator=parsed["timing_indicator"],
-                    )
-                )
+                items.append(LightningItem(**parsed))
+                print("created item")
             except Exception as e:
-                print(f"Error parsing UALF line: {line}, Error: {e}")
+                print(f"Error parsing UALF line: {parsed}, Error: {e}")
 
-        return cls(root=items)
+        return cls.model_validate(items)

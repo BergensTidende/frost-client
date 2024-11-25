@@ -21,7 +21,6 @@ class LightningEndpoint(BaseEndpoint[LightningRequest, LightningResponse]):
         **kwargs: Any,
     ) -> Optional[Lightning]:
         response_data = self.get_data(**kwargs)
-
         if not response_data:
             print("No lightning data available")
             return None
